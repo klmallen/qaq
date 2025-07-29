@@ -1,0 +1,261 @@
+/* Vue Flow 样式覆盖 - QAQ 主题 */
+
+/* 基础样式 */
+.vue-flow {
+  background: var(--qaq-editor-bg, #1a1a1a);
+}
+
+.vue-flow__pane {
+  cursor: default;
+}
+
+.vue-flow__pane.selection {
+  cursor: pointer;
+}
+
+.vue-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+/* 节点样式 */
+.vue-flow__node {
+  cursor: pointer;
+}
+
+.vue-flow__node.selected {
+  box-shadow: 0 0 0 2px var(--qaq-primary, #00DC82);
+}
+
+.vue-flow__node:hover {
+  box-shadow: 0 0 0 1px var(--qaq-primary, #00DC82);
+}
+
+/* 边样式 */
+.vue-flow__edge {
+  cursor: pointer;
+}
+
+.vue-flow__edge.selected .vue-flow__edge-path {
+  stroke: var(--qaq-accent-blue, #3b82f6);
+  stroke-width: 2;
+}
+
+.vue-flow__edge:hover .vue-flow__edge-path {
+  stroke: var(--qaq-primary, #00DC82);
+}
+
+/* 连接线样式 */
+.vue-flow__connection-line {
+  stroke: var(--qaq-primary, #00DC82);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+/* 控制器样式 */
+.vue-flow__controls {
+  background: var(--qaq-editor-panel, #2a2a2a);
+  border: 1px solid var(--qaq-editor-border, #404040);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vue-flow__controls-button {
+  background: transparent;
+  border: none;
+  color: var(--qaq-editor-text, #ffffff);
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.vue-flow__controls-button:hover {
+  background: var(--qaq-hover-bg, rgba(0, 220, 130, 0.1));
+  color: var(--qaq-primary, #00DC82);
+}
+
+.vue-flow__controls-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 小地图样式 */
+.vue-flow__minimap {
+  background: var(--qaq-editor-panel, #2a2a2a);
+  border: 1px solid var(--qaq-editor-border, #404040);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vue-flow__minimap-mask {
+  fill: rgba(0, 220, 130, 0.1);
+  stroke: var(--qaq-primary, #00DC82);
+  stroke-width: 1;
+}
+
+.vue-flow__minimap-node {
+  fill: var(--qaq-editor-border, #404040);
+  stroke: var(--qaq-editor-text-muted, #666666);
+  stroke-width: 1;
+}
+
+/* 背景样式 */
+.vue-flow__background {
+  background: var(--qaq-editor-bg, #1a1a1a);
+}
+
+.vue-flow__background-pattern {
+  fill: var(--qaq-editor-border, #404040);
+  opacity: 0.3;
+}
+
+/* 选择框样式 */
+.vue-flow__selection {
+  background: rgba(0, 220, 130, 0.1);
+  border: 1px solid var(--qaq-primary, #00DC82);
+}
+
+/* 面板样式 */
+.vue-flow__panel {
+  background: var(--qaq-editor-panel, #2a2a2a);
+  border: 1px solid var(--qaq-editor-border, #404040);
+  border-radius: 6px;
+  color: var(--qaq-editor-text, #ffffff);
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 箭头标记 */
+.vue-flow__arrowhead {
+  fill: var(--qaq-editor-border, #404040);
+}
+
+.vue-flow__edge.selected .vue-flow__arrowhead {
+  fill: var(--qaq-accent-blue, #3b82f6);
+}
+
+/* 自定义箭头标记 */
+.vue-flow svg defs marker#default-arrow polygon {
+  fill: var(--qaq-editor-border, #404040);
+}
+
+.vue-flow svg defs marker#selected-arrow polygon {
+  fill: var(--qaq-accent-blue, #3b82f6);
+}
+
+.vue-flow svg defs marker#active-arrow polygon {
+  fill: var(--qaq-primary, #00DC82);
+}
+
+.vue-flow svg defs marker#entry-arrow polygon {
+  fill: var(--qaq-primary, #00DC82);
+}
+
+/* 连接点样式 */
+.vue-flow__handle {
+  background: var(--qaq-primary, #00DC82);
+  border: 2px solid var(--qaq-editor-bg, #1a1a1a);
+  width: 8px;
+  height: 8px;
+}
+
+.vue-flow__handle:hover {
+  background: var(--qaq-accent-green, #10b981);
+  transform: scale(1.2);
+}
+
+.vue-flow__handle.connecting {
+  background: var(--qaq-accent-orange, #f59e0b);
+}
+
+.vue-flow__handle.valid {
+  background: var(--qaq-primary, #00DC82);
+}
+
+.vue-flow__handle.invalid {
+  background: var(--qaq-accent-red, #ef4444);
+}
+
+/* 动画效果 */
+@keyframes vue-flow-node-highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 220, 130, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 220, 130, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 220, 130, 0);
+  }
+}
+
+.vue-flow__node.highlighted {
+  animation: vue-flow-node-highlight 1s ease-out;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .vue-flow__controls {
+    bottom: 10px;
+    left: 10px;
+  }
+  
+  .vue-flow__minimap {
+    width: 120px;
+    height: 80px;
+  }
+  
+  .vue-flow__controls-button {
+    padding: 6px;
+  }
+  
+  .vue-flow__controls-button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* 暗色主题优化 */
+.dark .vue-flow {
+  background: #0a0a0a;
+}
+
+.dark .vue-flow__background-pattern {
+  opacity: 0.2;
+}
+
+.dark .vue-flow__minimap {
+  background: #1a1a1a;
+}
+
+.dark .vue-flow__controls {
+  background: #1a1a1a;
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+  .vue-flow__edge-path {
+    stroke-width: 3;
+  }
+  
+  .vue-flow__handle {
+    border-width: 3px;
+  }
+  
+  .vue-flow__background-pattern {
+    opacity: 0.6;
+  }
+}
+
+/* 减少动画模式 */
+@media (prefers-reduced-motion: reduce) {
+  .vue-flow__node,
+  .vue-flow__edge,
+  .vue-flow__handle {
+    transition: none;
+  }
+  
+  .vue-flow__node.highlighted {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--qaq-primary, #00DC82);
+  }
+}

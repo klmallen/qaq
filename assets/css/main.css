@@ -1,0 +1,432 @@
+/* QAQ Game Engine Main Styles */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for QAQ Theme */
+:root {
+	/* Primary Colors - Godot Style Green */
+	--qaq-primary-50: #f0fdf4;
+	--qaq-primary-100: #dcfce7;
+	--qaq-primary-200: #bbf7d0;
+	--qaq-primary-300: #86efac;
+	--qaq-primary-400: #4ade80;
+	--qaq-primary-500: #22c55e;
+	--qaq-primary-600: #16a34a;
+	--qaq-primary-700: #15803d;
+	--qaq-primary-800: #166534;
+	--qaq-primary-900: #14532d;
+	--qaq-primary-950: #052e16;
+
+	/* Pure Black Theme Colors */
+	--qaq-gray-50: #f9fafb;
+	--qaq-gray-100: #f3f4f6;
+	--qaq-gray-200: #e5e7eb;
+	--qaq-gray-300: #d1d5db;
+	--qaq-gray-400: #9ca3af;
+	--qaq-gray-500: #6b7280;
+	--qaq-gray-600: #2a2a2a;
+	--qaq-gray-700: #1a1a1a;
+	--qaq-gray-800: #0a0a0a;
+	--qaq-gray-900: #000000;
+	--qaq-gray-950: #000000;
+
+	/* Editor Specific Colors - Pure Black Theme */
+	--qaq-editor-bg: #000000;
+	--qaq-editor-panel: #0a0a0a;
+	--qaq-editor-border: #1a1a1a;
+	--qaq-editor-text: var(--qaq-gray-100);
+	--qaq-editor-text-muted: var(--qaq-gray-400);
+
+	/* Node Type Colors */
+	--qaq-node-2d: #4ade80;
+	--qaq-node-3d: #60a5fa;
+	--qaq-node-control: #f59e0b;
+	--qaq-node-resource: #ec4899;
+	--qaq-node-script: #8b5cf6;
+
+	/* Selection and Interaction States */
+	--qaq-selection-border: #00DC82;
+	--qaq-selection-bg: rgba(0, 220, 130, 0.1);
+	--qaq-selection-shadow: 0 0 0 2px rgba(0, 220, 130, 0.3);
+	--qaq-hover-border: rgba(0, 220, 130, 0.6);
+	--qaq-hover-bg: rgba(0, 220, 130, 0.05);
+	--qaq-focus-border: #00DC82;
+	--qaq-focus-shadow: 0 0 0 2px rgba(0, 220, 130, 0.4);
+}
+
+/* Global Styles */
+* {
+	box-sizing: border-box;
+}
+
+html, body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	overflow: hidden;
+	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	background-color: var(--qaq-editor-bg);
+	color: var(--qaq-editor-text);
+}
+
+#__nuxt {
+	height: 100vh;
+	overflow: hidden;
+}
+
+/* QAQ Editor Layout */
+.qaq-editor {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	background-color: var(--qaq-editor-bg);
+	color: var(--qaq-editor-text);
+}
+
+.qaq-editor-panel {
+	background-color: var(--qaq-editor-panel);
+	border-color: var(--qaq-editor-border);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--qaq-gray-800);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--qaq-gray-600);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--qaq-gray-500);
+}
+
+/* 统一选中状态样式 */
+.qaq-selectable {
+	transition: all 0.2s ease;
+	cursor: pointer;
+	border: 1px solid transparent;
+}
+
+.qaq-selectable:hover {
+	border-color: var(--qaq-hover-border);
+	background-color: var(--qaq-hover-bg);
+}
+
+.qaq-selectable.qaq-selected {
+	border-color: var(--qaq-selection-border);
+	background-color: var(--qaq-selection-bg);
+	box-shadow: var(--qaq-selection-shadow);
+}
+
+.qaq-selectable:focus {
+	outline: none;
+	border-color: var(--qaq-focus-border);
+	box-shadow: var(--qaq-focus-shadow);
+}
+
+/* 面板选中状态 */
+.qaq-panel-selectable {
+	transition: all 0.2s ease;
+	cursor: pointer;
+	border: 2px solid transparent;
+	border-radius: 6px;
+}
+
+.qaq-panel-selectable:hover {
+	border-color: var(--qaq-hover-border);
+	background-color: var(--qaq-hover-bg);
+}
+
+.qaq-panel-selectable.qaq-panel-selected {
+	border-color: var(--qaq-selection-border);
+	background-color: var(--qaq-selection-bg);
+	box-shadow: var(--qaq-selection-shadow);
+}
+
+/* 节点树选中状态 */
+.qaq-tree-node {
+	transition: all 0.2s ease;
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 4px;
+	border: 1px solid transparent;
+}
+
+.qaq-tree-node:hover {
+	border-color: var(--qaq-hover-border);
+	background-color: var(--qaq-hover-bg);
+}
+
+.qaq-tree-node.qaq-tree-selected {
+	border-color: var(--qaq-selection-border);
+	background-color: var(--qaq-selection-bg);
+	box-shadow: inset 0 0 0 1px var(--qaq-selection-border);
+}
+
+/* 标签页选中状态 */
+.qaq-tab {
+	transition: all 0.2s ease;
+	cursor: pointer;
+	border: 1px solid transparent;
+	border-radius: 4px 4px 0 0;
+}
+
+.qaq-tab:hover {
+	border-color: var(--qaq-hover-border);
+	background-color: var(--qaq-hover-bg);
+}
+
+.qaq-tab.qaq-tab-active {
+	border-color: var(--qaq-selection-border);
+	background-color: var(--qaq-selection-bg);
+	border-bottom-color: var(--qaq-selection-border);
+}
+
+/* Tree View Styles */
+.qaq-tree-item {
+	display: flex;
+	align-items: center;
+	padding: 2px 4px;
+	cursor: pointer;
+	user-select: none;
+	border-radius: 4px;
+	transition: background-color 0.15s ease;
+}
+
+.qaq-tree-item:hover {
+	background-color: var(--qaq-gray-700);
+}
+
+.qaq-tree-item.selected {
+	background-color: var(--qaq-gray-600);
+	color: white;
+	border-left: 3px solid var(--qaq-primary-500);
+}
+
+.qaq-tree-indent {
+	width: 16px;
+	height: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* File System Styles */
+.qaq-file-item {
+	display: flex;
+	align-items: center;
+	padding: 4px 8px;
+	cursor: pointer;
+	border-radius: 4px;
+	transition: background-color 0.15s ease;
+}
+
+.qaq-file-item:hover {
+	background-color: var(--qaq-gray-700);
+}
+
+.qaq-file-item.selected {
+	background-color: var(--qaq-gray-600);
+	color: white;
+	border-left: 3px solid var(--qaq-primary-500);
+}
+
+/* Property Editor Styles */
+.qaq-property-group {
+	margin-bottom: 16px;
+}
+
+.qaq-property-group-header {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--qaq-editor-text);
+	margin-bottom: 8px;
+	padding: 4px 0;
+	border-bottom: 1px solid var(--qaq-editor-border);
+}
+
+.qaq-property-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 0;
+	min-height: 32px;
+}
+
+.qaq-property-label {
+	font-size: 13px;
+	color: var(--qaq-editor-text-muted);
+	min-width: 100px;
+	flex-shrink: 0;
+}
+
+.qaq-property-value {
+	flex: 1;
+	margin-left: 8px;
+}
+
+/* Viewport Styles */
+.qaq-viewport {
+	position: relative;
+	flex: 1;
+	background: linear-gradient(45deg, #1a1a1a 25%, transparent 25%),
+	linear-gradient(-45deg, #1a1a1a 25%, transparent 25%),
+	linear-gradient(45deg, transparent 75%, #1a1a1a 75%),
+	linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+	background-size: 20px 20px;
+	background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+	background-color: var(--qaq-gray-900);
+}
+
+.qaq-viewport canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Tab Styles */
+.qaq-tab {
+	display: flex;
+	align-items: center;
+	padding: 6px 12px;
+	background-color: var(--qaq-gray-700);
+	border: 1px solid var(--qaq-editor-border);
+	border-bottom: none;
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.15s ease;
+}
+
+.qaq-tab:hover {
+	background-color: var(--qaq-gray-600);
+}
+
+.qaq-tab.active {
+	background-color: var(--qaq-editor-panel);
+	border-bottom: 2px solid var(--qaq-primary-500);
+}
+
+.qaq-tab-close {
+	margin-left: 8px;
+	opacity: 0.6;
+	transition: opacity 0.15s ease;
+}
+
+.qaq-tab-close:hover {
+	opacity: 1;
+}
+
+/* Drag and Drop Styles */
+.qaq-drag-over {
+	background-color: var(--qaq-primary-600) !important;
+	opacity: 0.8;
+}
+
+.qaq-drop-zone {
+	border: 2px dashed var(--qaq-primary-500);
+	background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Animation Styles */
+.qaq-fade-enter-active,
+.qaq-fade-leave-active {
+	transition: opacity 0.2s ease;
+}
+
+.qaq-fade-enter-from,
+.qaq-fade-leave-to {
+	opacity: 0;
+}
+
+.qaq-slide-enter-active,
+.qaq-slide-leave-active {
+	transition: transform 0.2s ease;
+}
+
+.qaq-slide-enter-from {
+	transform: translateX(-100%);
+}
+
+.qaq-slide-leave-to {
+	transform: translateX(100%);
+}
+
+/* Utility Classes */
+.qaq-no-select {
+	user-select: none;
+}
+
+.qaq-full-height {
+	height: 100%;
+}
+
+.qaq-flex-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.qaq-text-ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Focus Styles */
+.qaq-focus-visible:focus-visible {
+	outline: 2px solid var(--qaq-primary-500);
+	outline-offset: 2px;
+}
+
+/* Loading Spinner */
+.qaq-spinner {
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--qaq-gray-600);
+	border-top: 2px solid var(--qaq-primary-500);
+	border-radius: 50%;
+	animation: qaq-spin 1s linear infinite;
+}
+
+@keyframes qaq-spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+/* Force dark theme and remove borders */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-black text-white;
+  }
+}
+
+@layer utilities {
+  /* Remove all borders globally */
+  * {
+    border-color: transparent !important;
+  }
+
+  .border,
+  .border-t,
+  .border-r,
+  .border-b,
+  .border-l,
+  .border-x,
+  .border-y {
+    border-color: transparent !important;
+    border-width: 0 !important;
+  }
+}

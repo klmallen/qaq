@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QAQ Game Engine - Scene Creation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #2d2d2d;
+            color: #ffffff;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #4d4d4d;
+            border-radius: 5px;
+        }
+        .test-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background-color: #45a049;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left: 4px solid #f44336;
+        }
+        .info {
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>QAQ Game Engine - Scene Creation Test</h1>
+        <p>这个测试页面用于验证场景创建功能是否正常工作。</p>
+        
+        <div class="test-section">
+            <h2>测试说明</h2>
+            <p>请按照以下步骤测试场景创建功能：</p>
+            <ol>
+                <li>打开 QAQ Game Engine 编辑器 (http://localhost:3000/editor)</li>
+                <li>点击左侧场景树面板中的 "Create Scene" 按钮</li>
+                <li>检查是否创建了新场景并显示在场景树中</li>
+                <li>检查顶部是否出现了新的场景标签页</li>
+                <li>点击顶部标签栏的 "+" 按钮创建更多场景</li>
+                <li>验证场景之间的切换是否正常</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h2>预期结果</h2>
+            <div class="test-result info">
+✅ 场景创建功能应该包含：
+- 点击 "Create Scene" 按钮后立即创建新的 3D 场景
+- 场景自动命名为 Scene1, Scene2, Scene3 等
+- 每个场景包含一个根节点 (Node3D) 和一个子节点 (MeshInstance3D)
+- 新场景标签页出现在顶部标签栏
+- 场景树显示新创建的节点层次结构
+- 可以在不同场景标签页之间切换
+- 3D 视口显示默认的立方体网格
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>快速访问</h2>
+            <button class="test-button" onclick="openEditor()">打开编辑器</button>
+            <button class="test-button" onclick="openConsole()">打开浏览器控制台</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>调试信息</h2>
+            <p>如果遇到问题，请检查浏览器控制台的输出信息：</p>
+            <div class="test-result info">
+预期的控制台输出：
+- "✅ Created new scene: Scene1"
+- "📂 Opened tab: Scene1"
+- "🎯 Active tab: scene-xxxxx"
+- 没有错误信息 (红色文本)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openEditor() {
+            window.open('http://localhost:3000/editor', '_blank');
+        }
+        
+        function openConsole() {
+            alert('请按 F12 或右键选择"检查元素"来打开浏览器开发者工具');
+        }
+        
+        // 页面加载完成后的提示
+        window.addEventListener('load', function() {
+            console.log('🧪 Scene Creation Test Page Loaded');
+            console.log('📋 Please follow the test instructions to verify scene creation functionality');
+        });
+    </script>
+</body>
+</html>

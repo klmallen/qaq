@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QAQ Scene Creation Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #2d2d2d;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: #ff6b6b;
+            background-color: #2d1b1b;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #51cf66;
+            background-color: #1b2d1b;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        .log {
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>QAQ Scene Creation Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: ProcessMode Import</h2>
+        <button onclick="testProcessModeImport()">Test ProcessMode Import</button>
+        <div id="processmode-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Node Creation</h2>
+        <button onclick="testNodeCreation()">Test Node Creation</button>
+        <div id="node-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: SceneTree Creation</h2>
+        <button onclick="testSceneTreeCreation()">Test SceneTree Creation</button>
+        <div id="scenetree-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Editor Store Scene Creation</h2>
+        <button onclick="testEditorStoreSceneCreation()">Test Editor Store Scene Creation</button>
+        <div id="editorstore-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Log</h2>
+        <div id="console-log" class="log"></div>
+    </div>
+
+    <script type="module">
+        // 重定向 console.log 到页面
+        const originalLog = console.log;
+        const originalError = console.error;
+        const logDiv = document.getElementById('console-log');
+        
+        function addToLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logDiv.textContent += logEntry;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addToLog(args.join(' '), 'log');
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addToLog(args.join(' '), 'error');
+        };
+        
+        // 测试函数
+        window.testProcessModeImport = async function() {
+            const resultDiv = document.getElementById('processmode-result');
+            try {
+                // 尝试导入 ProcessMode
+                const { ProcessMode } = await import('./types/core.ts');
+                console.log('ProcessMode imported successfully:', ProcessMode);
+                resultDiv.innerHTML = '<div class="success">✅ ProcessMode imported successfully</div>';
+            } catch (error) {
+                console.error('ProcessMode import failed:', error);
+                resultDiv.innerHTML = `<div class="error">❌ ProcessMode import failed: ${error.message}</div>`;
+            }
+        };
+        
+        window.testNodeCreation = async function() {
+            const resultDiv = document.getElementById('node-result');
+            try {
+                const Node = (await import('./core/nodes/Node.ts')).default;
+                const node = new Node('TestNode');
+                console.log('Node created successfully:', node);
+                resultDiv.innerHTML = '<div class="success">✅ Node created successfully</div>';
+            } catch (error) {
+                console.error('Node creation failed:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Node creation failed: ${error.message}</div>`;
+            }
+        };
+        
+        window.testSceneTreeCreation = async function() {
+            const resultDiv = document.getElementById('scenetree-result');
+            try {
+                const { SceneTree } = await import('./core/scenes/SceneTree.ts');
+                const sceneTree = new SceneTree();
+                console.log('SceneTree created successfully:', sceneTree);
+                resultDiv.innerHTML = '<div class="success">✅ SceneTree created successfully</div>';
+            } catch (error) {
+                console.error('SceneTree creation failed:', error);
+                resultDiv.innerHTML = `<div class="error">❌ SceneTree creation failed: ${error.message}</div>`;
+            }
+        };
+        
+        window.testEditorStoreSceneCreation = async function() {
+            const resultDiv = document.getElementById('editorstore-result');
+            try {
+                // 这个测试需要在 Nuxt 环境中运行，这里只是模拟
+                console.log('Editor store scene creation test - would need Nuxt environment');
+                resultDiv.innerHTML = '<div class="success">✅ Test prepared (needs Nuxt environment)</div>';
+            } catch (error) {
+                console.error('Editor store test failed:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Editor store test failed: ${error.message}</div>`;
+            }
+        };
+        
+        console.log('Debug test page loaded');
+    </script>
+</body>
+</html>

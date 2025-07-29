@@ -1,0 +1,38 @@
+{
+  "name": "qaq-engine-debug",
+  "version": "1.0.0",
+  "description": "QAQ游戏引擎调试工具集",
+  "main": "test-runner.js",
+  "scripts": {
+    "test": "node test-runner.js",
+    "test:verbose": "node test-runner.js --verbose",
+    "test:quick": "node test-runner.js --quick",
+    "serve": "python -m http.server 8000",
+    "serve:node": "node -e \"const http=require('http'),fs=require('fs'),path=require('path');http.createServer((req,res)=>{const file=path.join(__dirname,req.url==='/'?'index.html':req.url);fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end('Not Found');return;}const ext=path.extname(file);const contentType={'html':'text/html','js':'application/javascript','css':'text/css','json':'application/json'}[ext.slice(1)]||'text/plain';res.writeHead(200,{'Content-Type':contentType});res.end(data);});}).listen(8000,()=>console.log('Server running at http://localhost:8000'));\"",
+    "report": "cat test-report.json | jq .",
+    "clean": "rm -f test-report.json *.log"
+  },
+  "keywords": [
+    "qaq-engine",
+    "game-engine",
+    "debug",
+    "test",
+    "camera",
+    "3d"
+  ],
+  "author": "QAQ Engine Team",
+  "license": "MIT",
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qaq-engine/qaq-game-engine.git",
+    "directory": "debug"
+  },
+  "bugs": {
+    "url": "https://github.com/qaq-engine/qaq-game-engine/issues"
+  },
+  "homepage": "https://github.com/qaq-engine/qaq-game-engine#readme"
+}

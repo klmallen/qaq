@@ -1,0 +1,183 @@
+{
+  "timestamp": "2025-07-23T06:58:12.073Z",
+  "totalTime": 13,
+  "summary": {
+    "total": 29,
+    "passed": 27,
+    "failed": 2,
+    "errors": 0,
+    "successRate": 93.10344827586206
+  },
+  "results": [
+    {
+      "timestamp": "2025-07-23T06:58:12.064Z",
+      "message": "🏗️ Testing basic project structure...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.065Z",
+      "message": "✅ PASS: Core file exists: ../core/engine/Engine.ts",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.065Z",
+      "message": "✅ PASS: Core file exists: ../core/nodes/base/Camera.ts",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.065Z",
+      "message": "✅ PASS: Core file exists: ../core/nodes/3d/Camera3D.ts",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.065Z",
+      "message": "❌ FAIL: Core file exists: ../core/nodes/base/Node.ts",
+      "type": "fail"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.065Z",
+      "message": "❌ FAIL: Core file exists: ../core/nodes/3d/Node3D.ts",
+      "type": "fail"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.066Z",
+      "message": "📁 Testing file structure...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.066Z",
+      "message": "✅ PASS: Directory exists: ../core",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.066Z",
+      "message": "✅ PASS: Directory exists: ../core/engine",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.067Z",
+      "message": "✅ PASS: Directory exists: ../core/nodes",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.067Z",
+      "message": "✅ PASS: Directory exists: ../core/nodes/base",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.067Z",
+      "message": "✅ PASS: Directory exists: ../core/nodes/3d",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.067Z",
+      "message": "✅ PASS: Directory exists: ../core/camera",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.067Z",
+      "message": "✅ PASS: TypeScript configuration exists",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.067Z",
+      "message": "📷 Testing mock Camera3D functionality...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Camera3D name property",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Camera3D position property",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Camera3D rotation property",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Position test 1: (0, 0, 0)",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: THREE.js sync test 1",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Position test 2: (10, 20, 30)",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: THREE.js sync test 2",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Position test 3: (-5, -10, -15)",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: THREE.js sync test 3",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: Position test 4: (0, -200, -30)",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.068Z",
+      "message": "✅ PASS: THREE.js sync test 4",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.069Z",
+      "message": "✅ PASS: FOV parameter setting",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.069Z",
+      "message": "✅ PASS: Near parameter setting",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.069Z",
+      "message": "✅ PASS: Far parameter setting",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.069Z",
+      "message": "✅ PASS: lookAt method execution",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.069Z",
+      "message": "✅ PASS: Camera activation",
+      "type": "pass"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.069Z",
+      "message": "⚡ Running performance tests...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.071Z",
+      "message": "📊 Position setting performance: 0.000230ms per operation",
+      "type": "info"
+    },
+    {
+      "timestamp": "2025-07-23T06:58:12.071Z",
+      "message": "✅ PASS: Position setting performance is acceptable (< 0.1ms)",
+      "type": "pass"
+    }
+  ]
+}

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QAQ Engine - Vite Debug Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            position: relative;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            color: #00d4ff;
+            font-size: 24px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        
+        .header .subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-content {
+            padding: 16px;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .btn.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #000;
+        }
+        
+        .btn.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .status-label {
+            color: #ccc;
+        }
+        
+        .status-value {
+            font-weight: 600;
+        }
+        
+        .status-value.success {
+            color: #28a745;
+        }
+        
+        .status-value.error {
+            color: #dc3545;
+        }
+        
+        .status-value.warning {
+            color: #ffc107;
+        }
+        
+        .console {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 12px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #333;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f23 100%);
+        }
+        
+        #debug-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .overlay-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            min-width: 200px;
+        }
+        
+        .overlay-info h4 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .overlay-info .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            border-top-color: #00d4ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .mode-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .fps-counter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>🎮 QAQ Engine</h1>
+                <div class="subtitle">Vite Debug Mode</div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>🧪</span>
+                    <span>Core Tests</span>
+                </div>
+                <div class="section-content">
+                    <div class="status-grid" id="test-status">
+                        <div class="status-item">
+                            <span class="status-label">Engine:</span>
+                            <span class="status-value" id="engine-status">❓</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Camera3D:</span>
+                            <span class="status-value" id="camera-status">❓</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Position Sync:</span>
+                            <span class="status-value" id="position-status">❓</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Tests Passed:</span>
+                            <span class="status-value" id="tests-passed">0/0</span>
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn" onclick="runAllTests()">Run All Tests</button>
+                        <button class="btn success" onclick="testEngine()">Test Engine</button>
+                        <button class="btn success" onclick="testCamera()">Test Camera3D</button>
+                        <button class="btn warning" onclick="testPerformance()">Performance Test</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>📷</span>
+                    <span>Camera Debug</span>
+                </div>
+                <div class="section-content">
+                    <div class="button-group">
+                        <button class="btn" onclick="createTestScene()">Create Test Scene</button>
+                        <button class="btn" onclick="testCameraPosition()">Test Position</button>
+                        <button class="btn" onclick="testOrbitControls()">Test Orbit Controls</button>
+                        <button class="btn danger" onclick="resetScene()">Reset Scene</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>📊</span>
+                    <span>Performance</span>
+                </div>
+                <div class="section-content">
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span class="status-label">FPS:</span>
+                            <span class="status-value success" id="fps-display">60</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Memory:</span>
+                            <span class="status-value" id="memory-display">0 MB</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Draw Calls:</span>
+                            <span class="status-value" id="drawcalls-display">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>📋</span>
+                    <span>Console</span>
+                </div>
+                <div class="section-content">
+                    <div class="console" id="debug-console">
+                        QAQ Engine Vite Debug Mode initialized...<br>
+                        Ready for TypeScript core testing.<br>
+                    </div>
+                    <div class="button-group" style="margin-top: 12px;">
+                        <button class="btn danger" onclick="clearConsole()">Clear Console</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="debug-canvas"></canvas>
+                
+                <div class="fps-counter" id="fps-counter">
+                    FPS: <span id="fps-value">60</span>
+                </div>
+                
+                <div class="overlay-info">
+                    <h4>🎮 Controls</h4>
+                    <div class="info-item">
+                        <span>Left Mouse:</span>
+                        <span>Rotate</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Right Mouse:</span>
+                        <span>Pan</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Wheel:</span>
+                        <span>Zoom</span>
+                    </div>
+                    <div class="info-item">
+                        <span>R:</span>
+                        <span>Reset View</span>
+                    </div>
+                </div>
+                
+                <div class="mode-indicator">
+                    🚀 VITE MODE
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="/main.ts"></script>
+</body>
+</html>

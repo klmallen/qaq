@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QAQ游戏引擎 - 基础3D场景演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .demo-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .canvas-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #gameCanvas {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+        }
+
+        button.success {
+            background: linear-gradient(45deg, #00b894, #00a085);
+        }
+
+        .info-panel {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .status.ready {
+            background: #00b894;
+        }
+
+        .status.loading {
+            background: #fdcb6e;
+            color: #2d3436;
+        }
+
+        .status.error {
+            background: #e17055;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+
+        .feature h4 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+
+        .feature ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .feature li {
+            margin: 5px 0;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部标题 -->
+        <div class="header">
+            <h1>🎮 QAQ游戏引擎</h1>
+            <p>基础3D场景演示 - 完整的场景管理和3D渲染系统</p>
+        </div>
+
+        <!-- 引擎状态 -->
+        <div class="demo-section">
+            <h2>🚀 引擎状态</h2>
+            <div id="engineStatus">
+                <span class="status loading">初始化中...</span>
+            </div>
+            <div class="info-panel" id="statusLog">
+                正在初始化QAQ游戏引擎...
+            </div>
+        </div>
+
+        <!-- 3D渲染画布 -->
+        <div class="demo-section">
+            <h2>🎬 3D场景渲染</h2>
+            <div class="canvas-container">
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                <p>3D场景将在此处渲染</p>
+            </div>
+        </div>
+
+        <!-- 场景控制 -->
+        <div class="demo-section">
+            <h2>🎯 场景控制</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <h3>场景管理</h3>
+                    <button onclick="createMainScene()">创建主场景</button>
+                    <button onclick="addCamera()">添加相机</button>
+                    <button onclick="addMeshObject()">添加3D对象</button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>场景切换</h3>
+                    <button class="secondary" onclick="switchToMenuScene()">切换到菜单</button>
+                    <button class="secondary" onclick="switchToGameScene()">切换到游戏</button>
+                    <button class="secondary" onclick="switchToSettingsScene()">切换到设置</button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>模型加载</h3>
+                    <button class="success" onclick="loadCubeModel()">加载立方体</button>
+                    <button class="success" onclick="loadSphereModel()">加载球体</button>
+                    <button class="success" onclick="loadComplexModel()">加载复杂模型</button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>渲染控制</h3>
+                    <button onclick="startRendering()">开始渲染</button>
+                    <button onclick="stopRendering()">停止渲染</button>
+                    <button onclick="toggleStats()">显示统计</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能特性 -->
+        <div class="demo-section">
+            <h2>✨ 核心特性演示</h2>
+            <div class="features">
+                <div class="feature">
+                    <h4>🎬 场景管理系统</h4>
+                    <ul>
+                        <li>Godot风格的场景架构</li>
+                        <li>场景生命周期管理</li>
+                        <li>场景切换和过渡效果</li>
+                        <li>场景栈导航系统</li>
+                    </ul>
+                </div>
+                
+                <div class="feature">
+                    <h4>📦 资源加载系统</h4>
+                    <ul>
+                        <li>多格式3D模型支持</li>
+                        <li>异步加载和进度管理</li>
+                        <li>智能缓存系统</li>
+                        <li>Three.js深度集成</li>
+                    </ul>
+                </div>
+                
+                <div class="feature">
+                    <h4>🎥 3D渲染系统</h4>
+                    <ul>
+                        <li>Camera3D透视/正交投影</li>
+                        <li>MeshInstance3D网格渲染</li>
+                        <li>Node3D节点树系统</li>
+                        <li>完整的3D变换支持</li>
+                    </ul>
+                </div>
+                
+                <div class="feature">
+                    <h4>🔧 Engine集成</h4>
+                    <ul>
+                        <li>统一的引擎架构</li>
+                        <li>渲染循环集成</li>
+                        <li>事件系统支持</li>
+                        <li>性能监控和调试</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实时信息 -->
+        <div class="demo-section">
+            <h2>📊 实时信息</h2>
+            <div class="info-panel" id="realTimeInfo">
+                等待引擎初始化...
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- 引入QAQ游戏引擎核心模块 -->
+    <script type="module">
+        // 这里将包含完整的演示逻辑
+        // 由于文件长度限制，演示逻辑将在下一个文件中实现
+        console.log('🚀 QAQ游戏引擎基础3D场景演示开始加载...');
+        
+        // 全局变量
+        window.qaqEngine = null;
+        window.currentScene = null;
+        window.isRendering = false;
+        window.stats = {
+            frameCount: 0,
+            lastTime: Date.now()
+        };
+
+        // 状态更新函数
+        window.updateStatus = function(message, type = 'info') {
+            const statusLog = document.getElementById('statusLog');
+            const timestamp = new Date().toLocaleTimeString();
+            statusLog.innerHTML += `\n[${timestamp}] ${message}`;
+            statusLog.scrollTop = statusLog.scrollHeight;
+            
+            if (type === 'ready') {
+                document.getElementById('engineStatus').innerHTML = 
+                    '<span class="status ready">引擎就绪</span>';
+            } else if (type === 'error') {
+                document.getElementById('engineStatus').innerHTML = 
+                    '<span class="status error">错误</span>';
+            }
+        };
+
+        // 实时信息更新
+        window.updateRealTimeInfo = function() {
+            const infoPanel = document.getElementById('realTimeInfo');
+            if (window.qaqEngine && window.currentScene) {
+                const sceneTree = window.qaqEngine.getSceneTree();
+                const stats = sceneTree.getStats();
+                
+                infoPanel.innerHTML = `
+当前场景: ${window.currentScene.name}
+场景状态: ${window.currentScene.state}
+场景类型: ${window.currentScene.sceneType}
+节点数量: ${stats.totalNodes}
+场景栈深度: ${stats.stackDepth}
+内存使用: ${(stats.memoryUsage / 1024).toFixed(2)} KB
+运行时间: ${(stats.uptime / 1000).toFixed(2)} 秒
+渲染状态: ${window.isRendering ? '运行中' : '已停止'}
+帧数: ${window.stats.frameCount}
+                `;
+            }
+        };
+
+        // 定期更新实时信息
+        setInterval(window.updateRealTimeInfo, 1000);
+
+        window.updateStatus('HTML页面加载完成，准备初始化引擎...');
+    </script>
+    
+    <!-- 演示逻辑脚本 -->
+    <script src="demo.js"></script>
+</body>
+</html>

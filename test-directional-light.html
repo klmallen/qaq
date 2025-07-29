@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DirectionalLight3D 测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-title {
+            color: #00dc82;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .test-result {
+            background: #333;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .success {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .error {
+            border-left: 4px solid #f44336;
+        }
+        
+        .info {
+            border-left: 4px solid #2196f3;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #00dc82;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #00b86b;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .canvas-container {
+            background: #000;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        canvas {
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>QAQ游戏引擎 - DirectionalLight3D 测试</h1>
+            <p>测试方向光节点的各项功能</p>
+        </div>
+        
+        <div class="controls">
+            <button onclick="runBasicTests()">运行基础测试</button>
+            <button onclick="runShadowTests()">运行阴影测试</button>
+            <button onclick="runDirectionTests()">运行方向测试</button>
+            <button onclick="runPerformanceTests()">运行性能测试</button>
+            <button onclick="clearResults()">清除结果</button>
+        </div>
+        
+        <div id="test-results"></div>
+        
+        <div class="canvas-container">
+            <h3>3D 预览</h3>
+            <canvas id="preview-canvas" width="800" height="600"></canvas>
+            <p>这里将显示DirectionalLight3D的3D预览效果</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // 模拟DirectionalLight3D类（简化版本用于测试）
+        class MockDirectionalLight3D {
+            constructor(name = 'DirectionalLight3D', config = {}) {
+                this.name = name;
+                this.lightType = 'directional';
+                this.color = config.color || 0xffffff;
+                this.intensity = config.intensity || 1.0;
+                this.enabled = config.enabled !== false;
+                this.castShadow = config.castShadow || false;
+                this.shadowCameraLeft = config.shadowCameraLeft || -10;
+                this.shadowCameraRight = config.shadowCameraRight || 10;
+                this.shadowCameraTop = config.shadowCameraTop || 10;
+                this.shadowCameraBottom = config.shadowCameraBottom || -10;
+                this.target = config.target || { x: 0, y: 0, z: 0 };
+                this.position = { x: 0, y: 0, z: 0 };
+                this._initialized = false;
+            }
+            
+            _ready() {
+                this._initialized = true;
+                console.log(`DirectionalLight3D ${this.name} initialized`);
+            }
+            
+            setShadowCameraBox(left, right, top, bottom) {
+                this.shadowCameraLeft = left;
+                this.shadowCameraRight = right;
+                this.shadowCameraTop = top;
+                this.shadowCameraBottom = bottom;
+            }
+            
+            setShadowCameraSize(size) {
+                const halfSize = size / 2;
+                this.setShadowCameraBox(-halfSize, halfSize, halfSize, -halfSize);
+            }
+            
+            setDirection(target) {
+                this.target = { ...target };
+            }
+            
+            setDirectionVector(direction) {
+                this.target = {
+                    x: this.position.x + direction.x,
+                    y: this.position.y + direction.y,
+                    z: this.position.z + direction.z
+                };
+            }
+            
+            getDirectionVector() {
+                return {
+                    x: this.target.x - this.position.x,
+                    y: this.target.y - this.position.y,
+                    z: this.target.z - this.position.z
+                };
+            }
+            
+            getDirectionalStats() {
+                return {
+                    shadowCameraLeft: this.shadowCameraLeft,
+                    shadowCameraRight: this.shadowCameraRight,
+                    shadowCameraTop: this.shadowCameraTop,
+                    shadowCameraBottom: this.shadowCameraBottom,
+                    target: this.target,
+                    direction: this.getDirectionVector()
+                };
+            }
+            
+            clone(name) {
+                return new MockDirectionalLight3D(name || `${this.name}_clone`, {
+                    color: this.color,
+                    intensity: this.intensity,
+                    enabled: this.enabled,
+                    castShadow: this.castShadow,
+                    shadowCameraLeft: this.shadowCameraLeft,
+                    shadowCameraRight: this.shadowCameraRight,
+                    shadowCameraTop: this.shadowCameraTop,
+                    shadowCameraBottom: this.shadowCameraBottom,
+                    target: { ...this.target }
+                });
+            }
+            
+            destroy() {
+                console.log(`DirectionalLight3D ${this.name} destroyed`);
+            }
+        }
+
+        // 测试结果显示
+        function addTestResult(title, message, type = 'info') {
+            const resultsContainer = document.getElementById('test-results');
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            
+            section.innerHTML = `
+                <div class="test-title">${title}</div>
+                <div class="test-result ${type}">${message}</div>
+            `;
+            
+            resultsContainer.appendChild(section);
+        }
+
+        // 基础功能测试
+        window.runBasicTests = function() {
+            try {
+                addTestResult('基础功能测试', '开始测试...', 'info');
+                
+                // 测试1: 创建实例
+                const light = new MockDirectionalLight3D('TestLight');
+                if (light.name === 'TestLight' && light.lightType === 'directional') {
+                    addTestResult('创建实例', '✓ 成功创建DirectionalLight3D实例', 'success');
+                } else {
+                    addTestResult('创建实例', '✗ 创建实例失败', 'error');
+                }
+                
+                // 测试2: 默认属性
+                if (light.color === 0xffffff && light.intensity === 1.0 && light.enabled === true) {
+                    addTestResult('默认属性', '✓ 默认属性设置正确', 'success');
+                } else {
+                    addTestResult('默认属性', '✗ 默认属性设置错误', 'error');
+                }
+                
+                // 测试3: 属性修改
+                light.color = 0xff0000;
+                light.intensity = 2.0;
+                if (light.color === 0xff0000 && light.intensity === 2.0) {
+                    addTestResult('属性修改', '✓ 属性修改成功', 'success');
+                } else {
+                    addTestResult('属性修改', '✗ 属性修改失败', 'error');
+                }
+                
+                // 测试4: 初始化
+                light._ready();
+                if (light._initialized) {
+                    addTestResult('初始化', '✓ 光照初始化成功', 'success');
+                } else {
+                    addTestResult('初始化', '✗ 光照初始化失败', 'error');
+                }
+                
+                light.destroy();
+                addTestResult('基础功能测试', '✓ 所有基础测试完成', 'success');
+                
+            } catch (error) {
+                addTestResult('基础功能测试', `✗ 测试出错: ${error.message}`, 'error');
+            }
+        };
+
+        // 阴影功能测试
+        window.runShadowTests = function() {
+            try {
+                addTestResult('阴影功能测试', '开始测试...', 'info');
+                
+                const light = new MockDirectionalLight3D('ShadowLight', {
+                    castShadow: true,
+                    shadowCameraLeft: -20,
+                    shadowCameraRight: 20
+                });
+                
+                // 测试阴影相机设置
+                if (light.castShadow && light.shadowCameraLeft === -20) {
+                    addTestResult('阴影配置', '✓ 阴影配置正确', 'success');
+                } else {
+                    addTestResult('阴影配置', '✗ 阴影配置错误', 'error');
+                }
+                
+                // 测试阴影相机范围设置
+                light.setShadowCameraBox(-30, 30, 30, -30);
+                if (light.shadowCameraLeft === -30 && light.shadowCameraRight === 30) {
+                    addTestResult('阴影相机范围', '✓ 阴影相机范围设置成功', 'success');
+                } else {
+                    addTestResult('阴影相机范围', '✗ 阴影相机范围设置失败', 'error');
+                }
+                
+                // 测试正方形阴影相机
+                light.setShadowCameraSize(40);
+                if (light.shadowCameraLeft === -20 && light.shadowCameraRight === 20) {
+                    addTestResult('正方形阴影相机', '✓ 正方形阴影相机设置成功', 'success');
+                } else {
+                    addTestResult('正方形阴影相机', '✗ 正方形阴影相机设置失败', 'error');
+                }
+                
+                light.destroy();
+                addTestResult('阴影功能测试', '✓ 所有阴影测试完成', 'success');
+                
+            } catch (error) {
+                addTestResult('阴影功能测试', `✗ 测试出错: ${error.message}`, 'error');
+            }
+        };
+
+        // 方向控制测试
+        window.runDirectionTests = function() {
+            try {
+                addTestResult('方向控制测试', '开始测试...', 'info');
+                
+                const light = new MockDirectionalLight3D('DirectionLight');
+                light.position = { x: 0, y: 5, z: 0 };
+                
+                // 测试目标设置
+                light.setDirection({ x: 1, y: 0, z: -1 });
+                if (light.target.x === 1 && light.target.z === -1) {
+                    addTestResult('目标设置', '✓ 目标位置设置成功', 'success');
+                } else {
+                    addTestResult('目标设置', '✗ 目标位置设置失败', 'error');
+                }
+                
+                // 测试方向向量设置
+                light.setDirectionVector({ x: 2, y: -1, z: 0 });
+                const expectedTarget = { x: 2, y: 4, z: 0 };
+                if (light.target.x === expectedTarget.x && light.target.y === expectedTarget.y) {
+                    addTestResult('方向向量设置', '✓ 方向向量设置成功', 'success');
+                } else {
+                    addTestResult('方向向量设置', '✗ 方向向量设置失败', 'error');
+                }
+                
+                // 测试方向向量获取
+                const direction = light.getDirectionVector();
+                if (direction.x === 2 && direction.y === -1 && direction.z === 0) {
+                    addTestResult('方向向量获取', '✓ 方向向量获取成功', 'success');
+                } else {
+                    addTestResult('方向向量获取', '✗ 方向向量获取失败', 'error');
+                }
+                
+                light.destroy();
+                addTestResult('方向控制测试', '✓ 所有方向测试完成', 'success');
+                
+            } catch (error) {
+                addTestResult('方向控制测试', `✗ 测试出错: ${error.message}`, 'error');
+            }
+        };
+
+        // 性能测试
+        window.runPerformanceTests = function() {
+            try {
+                addTestResult('性能测试', '开始测试...', 'info');
+                
+                const startTime = performance.now();
+                const lights = [];
+                
+                // 创建大量光照实例
+                for (let i = 0; i < 1000; i++) {
+                    const light = new MockDirectionalLight3D(`Light_${i}`);
+                    light._ready();
+                    lights.push(light);
+                }
+                
+                const createTime = performance.now() - startTime;
+                addTestResult('创建性能', `✓ 创建1000个光照实例耗时: ${createTime.toFixed(2)}ms`, 'success');
+                
+                // 测试属性修改性能
+                const modifyStartTime = performance.now();
+                lights.forEach((light, index) => {
+                    light.color = 0xff0000 + index;
+                    light.intensity = Math.random() * 2;
+                    light.setDirection({ x: Math.random(), y: Math.random(), z: Math.random() });
+                });
+                
+                const modifyTime = performance.now() - modifyStartTime;
+                addTestResult('修改性能', `✓ 修改1000个光照属性耗时: ${modifyTime.toFixed(2)}ms`, 'success');
+                
+                // 清理
+                const destroyStartTime = performance.now();
+                lights.forEach(light => light.destroy());
+                const destroyTime = performance.now() - destroyStartTime;
+                
+                addTestResult('销毁性能', `✓ 销毁1000个光照实例耗时: ${destroyTime.toFixed(2)}ms`, 'success');
+                addTestResult('性能测试', '✓ 所有性能测试完成', 'success');
+                
+            } catch (error) {
+                addTestResult('性能测试', `✗ 测试出错: ${error.message}`, 'error');
+            }
+        };
+
+        // 清除结果
+        window.clearResults = function() {
+            document.getElementById('test-results').innerHTML = '';
+        };
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            addTestResult('系统信息', '✓ DirectionalLight3D 测试页面已加载', 'info');
+            addTestResult('使用说明', '点击上方按钮运行不同的测试用例', 'info');
+        });
+    </script>
+</body>
+</html>

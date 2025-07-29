@@ -1,0 +1,55 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ES6", "ESNext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist-debug",
+    "rootDir": "./",
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./*"],
+      "~/core/*": ["./core/*"],
+      "~/types/*": ["./types/*"],
+      "~/debug/*": ["./debug-vite/*"],
+      "~/*": ["./*"]
+    },
+    "types": [
+      "node",
+      "vite/client"
+    ]
+  },
+  "include": [
+    "debug-vite/**/*",
+    "core/**/*",
+    "types/**/*",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-debug",
+    ".nuxt",
+    ".output",
+    "pages/**/*",
+    "components/**/*",
+    "layouts/**/*",
+    "plugins/**/*",
+    "middleware/**/*",
+    "server/**/*"
+  ]
+}

@@ -1,0 +1,131 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
+export default defineNuxtConfig({
+  devtools: { enabled: true },
+  compatibilityDate: '2025-07-04',
+
+  // Modules - 重新启用核心模块
+  modules: [
+    '@pinia/nuxt',
+    '@nuxt/ui'
+  ],
+
+  // UI Configuration
+  ui: {
+    global: true,
+    icons: ['heroicons']
+  },
+
+  // Color Mode (Dark theme preference)
+  colorMode: {
+    preference: 'dark'
+  },
+
+  // CSS Configuration
+  css: [
+    '~/assets/css/main.css',
+    '~/assets/css/dark-theme.css',
+    '~/assets/css/vue-flow-fallback.css',
+    '~/assets/css/vue-flow.css',
+    '@vue-flow/core/dist/style.css',
+    '@vue-flow/core/dist/theme-default.css'
+  ],
+
+  // TypeScript Configuration
+  typescript: {
+    strict: false,
+    typeCheck: false
+  },
+
+  // Components Configuration
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+    },
+    {
+      path: '~/components/editor',
+      prefix: 'Editor',
+      pathPrefix: false,
+    },
+    {
+      path: '~/components/editor/material',
+      prefix: 'Material',
+      pathPrefix: false,
+    },
+    {
+      path: '~/components/editor/nodes',
+      prefix: 'Node',
+      pathPrefix: false,
+    }
+  ],
+
+  // Vite Configuration for better performance
+  vite: {
+    server: {
+      hmr: {
+        overlay: false,
+        port: 24678
+      },
+      fs: {
+        strict: false
+      }
+    },
+    build: {
+      rollupOptions: {
+        external: ['three', 'monaco-editor']
+      }
+    },
+    optimizeDeps: {
+      include: [
+        'three',
+        'three/examples/jsm/controls/OrbitControls',
+        'three/examples/jsm/loaders/GLTFLoader',
+        '@vue-flow/core',
+        '@vue-flow/background',
+        '@vue-flow/controls',
+        '@vue-flow/minimap'
+      ],
+      exclude: ['monaco-editor']
+    },
+    define: {
+      global: 'globalThis'
+    }
+  },
+
+  // Nitro Configuration
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'esnext'
+      }
+    }
+  },
+
+  // SSR Configuration
+  ssr: false,
+
+  // Experimental features
+  experimental: {
+    payloadExtraction: false,
+    inlineSSRStyles: false,
+    watcher: 'chokidar-granular'
+  },
+
+  // Development optimizations
+  devServer: {
+    port: 3000,
+    host: 'localhost'
+  },
+
+  // Build optimizations
+  build: {
+    transpile: ['three', '@vue-flow/core']
+  },
+
+  // Runtime config for performance
+  runtimeConfig: {
+    public: {
+      isDev: process.env.NODE_ENV === 'development'
+    }
+  }
+})

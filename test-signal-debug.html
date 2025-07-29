@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QAQ引擎信号系统调试</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+        .log {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffaa00; }
+        .info { color: #00aaff; }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 QAQ引擎信号系统调试工具</h1>
+    
+    <div>
+        <button onclick="testAnimatedSprite2DCreation()">测试AnimatedSprite2D创建</button>
+        <button onclick="testSignalSystem()">测试信号系统</button>
+        <button onclick="testSignalConnection()">测试信号连接</button>
+        <button onclick="clearLog()">清空日志</button>
+    </div>
+
+    <div id="log" class="log">
+        <div class="log-entry info">🚀 信号系统调试工具已启动</div>
+    </div>
+
+    <script type="module">
+        // 模拟导入（实际项目中应该使用正确的导入路径）
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        window.log = log;
+
+        // 测试AnimatedSprite2D创建
+        window.testAnimatedSprite2DCreation = async function() {
+            log('🧪 开始测试AnimatedSprite2D创建...', 'info');
+            
+            try {
+                // 这里需要实际的AnimatedSprite2D类
+                // 由于是HTML文件，我们只能模拟测试
+                log('⚠️ 需要在实际的QAQ引擎环境中运行此测试', 'warning');
+                log('请在demo-2d页面的控制台中查看调试信息', 'info');
+                
+            } catch (error) {
+                log(`❌ 创建失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 测试信号系统
+        window.testSignalSystem = function() {
+            log('🧪 开始测试信号系统基础功能...', 'info');
+            
+            // 模拟信号系统测试
+            const mockSignalSystem = {
+                signals: new Map(),
+                addSignal(name) {
+                    this.signals.set(name, []);
+                    return true;
+                },
+                hasSignal(name) {
+                    return this.signals.has(name);
+                },
+                connect(signalName, callback) {
+                    if (this.hasSignal(signalName)) {
+                        this.signals.get(signalName).push(callback);
+                        return true;
+                    }
+                    return false;
+                },
+                emit(signalName, data) {
+                    if (this.hasSignal(signalName)) {
+                        const callbacks = this.signals.get(signalName);
+                        callbacks.forEach(callback => callback(data));
+                        return true;
+                    }
+                    return false;
+                }
+            };
+
+            // 测试信号添加
+            mockSignalSystem.addSignal('test_signal');
+            if (mockSignalSystem.hasSignal('test_signal')) {
+                log('✅ 信号添加成功', 'success');
+            } else {
+                log('❌ 信号添加失败', 'error');
+                return;
+            }
+
+            // 测试信号连接
+            let signalReceived = false;
+            const testCallback = (data) => {
+                signalReceived = true;
+                log(`📡 收到信号: ${JSON.stringify(data)}`, 'success');
+            };
+
+            if (mockSignalSystem.connect('test_signal', testCallback)) {
+                log('✅ 信号连接成功', 'success');
+            } else {
+                log('❌ 信号连接失败', 'error');
+                return;
+            }
+
+            // 测试信号发射
+            mockSignalSystem.emit('test_signal', { test: 'data' });
+            
+            if (signalReceived) {
+                log('✅ 信号系统基础功能正常', 'success');
+            } else {
+                log('❌ 信号发射失败', 'error');
+            }
+        };
+
+        // 测试信号连接
+        window.testSignalConnection = function() {
+            log('🧪 开始测试信号连接功能...', 'info');
+            log('请在demo-2d页面中查看实际的信号连接测试结果', 'info');
+            
+            // 提供调试建议
+            log('🔍 调试建议:', 'info');
+            log('1. 检查AnimatedSprite2D构造函数是否调用了initializeAnimatedSpriteSignals()', 'info');
+            log('2. 检查ScriptBase.getOwner()是否返回正确的节点', 'info');
+            log('3. 检查信号是否在节点创建时正确注册', 'info');
+            log('4. 在浏览器控制台中运行: playerNode.hasSignal("animation_started")', 'info');
+        };
+
+        // 清空日志
+        window.clearLog = function() {
+            document.getElementById('log').innerHTML = '<div class="log-entry info">🚀 信号系统调试工具已启动</div>';
+        };
+
+        // 页面加载完成后的初始化
+        log('📋 调试工具使用说明:', 'info');
+        log('1. 这是一个独立的调试工具，用于测试信号系统基础功能', 'info');
+        log('2. 实际的AnimatedSprite2D测试需要在QAQ引擎环境中进行', 'info');
+        log('3. 请打开demo-2d页面，在浏览器控制台中查看详细的调试信息', 'info');
+        log('4. 如果仍有问题，请检查AnimatedSprite2D的信号初始化代码', 'info');
+    </script>
+</body>
+</html>

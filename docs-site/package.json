@@ -1,0 +1,32 @@
+{
+  "name": "qaq-engine-docs",
+  "version": "1.0.0",
+  "description": "QAQ Game Engine Documentation",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "serve": "vitepress serve docs"
+  },
+  "dependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "qaq",
+    "game-engine",
+    "documentation",
+    "typescript",
+    "threejs",
+    "2d",
+    "3d",
+    "webgl"
+  ],
+  "author": "QAQ Game Engine Team",
+  "license": "MIT"
+}

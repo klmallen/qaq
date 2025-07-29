@@ -1,0 +1,240 @@
+/* QAQ Game Engine - Unified Dark Theme */
+
+:root {
+  /* Core Colors - Pure Black Theme */
+  --qaq-black: #000000;
+  --qaq-dark-gray: #0a0a0a;
+  --qaq-medium-gray: #1a1a1a;
+  --qaq-light-gray: #2a2a2a;
+  --qaq-accent: #00DC82;
+  --qaq-accent-hover: #00b86f;
+  --qaq-text-primary: #ffffff;
+  --qaq-text-secondary: #cccccc;
+  --qaq-text-muted: #888888;
+
+  /* Component Backgrounds */
+  --qaq-bg-primary: var(--qaq-black);
+  --qaq-bg-secondary: var(--qaq-dark-gray);
+  --qaq-bg-tertiary: var(--qaq-medium-gray);
+  --qaq-bg-elevated: var(--qaq-light-gray);
+
+  /* Interactive States */
+  --qaq-hover: rgba(255, 255, 255, 0.1);
+  --qaq-active: rgba(255, 255, 255, 0.2);
+  --qaq-focus: var(--qaq-accent);
+
+  /* Shadows */
+  --qaq-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --qaq-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --qaq-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* Remove all borders */
+  --qaq-border: transparent;
+  --qaq-border-width: 0px;
+}
+
+/* Global Overrides - Remove ALL borders */
+* {
+  border-color: transparent !important;
+}
+
+.border,
+.border-t,
+.border-r,
+.border-b,
+.border-l,
+.border-x,
+.border-y {
+  border-color: transparent !important;
+  border-width: 0 !important;
+}
+
+/* Body and HTML */
+html,
+body {
+  background-color: var(--qaq-bg-primary) !important;
+  color: var(--qaq-text-primary) !important;
+}
+
+/* Nuxt UI Component Overrides */
+.bg-white {
+  background-color: var(--qaq-bg-secondary) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--qaq-bg-secondary) !important;
+}
+
+.bg-gray-100 {
+  background-color: var(--qaq-bg-tertiary) !important;
+}
+
+.bg-gray-200,
+.bg-gray-300,
+.bg-gray-400 {
+  background-color: var(--qaq-bg-elevated) !important;
+}
+
+.text-gray-900 {
+  color: var(--qaq-text-primary) !important;
+}
+
+.text-gray-700,
+.text-gray-600,
+.text-gray-500 {
+  color: var(--qaq-text-secondary) !important;
+}
+
+.text-gray-400,
+.text-gray-300 {
+  color: var(--qaq-text-muted) !important;
+}
+
+/* Card Components */
+.bg-white,
+[class*="bg-white"] {
+  background-color: var(--qaq-bg-elevated) !important;
+  box-shadow: var(--qaq-shadow-sm) !important;
+}
+
+/* Button Components */
+.bg-primary-500,
+.bg-green-500 {
+  background-color: var(--qaq-accent) !important;
+}
+
+.bg-primary-600,
+.bg-green-600 {
+  background-color: var(--qaq-accent-hover) !important;
+}
+
+/* Input Components */
+input,
+textarea,
+select {
+  background-color: var(--qaq-bg-tertiary) !important;
+  color: var(--qaq-text-primary) !important;
+  border: none !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--qaq-focus) !important;
+  outline-offset: 2px !important;
+}
+
+/* Modal and Dialog Overrides */
+.fixed.inset-0 {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 9999 !important;
+}
+
+/* Dropdown and Menu Overrides */
+.bg-white.shadow-lg,
+[class*="bg-white"][class*="shadow"] {
+  background-color: var(--qaq-bg-elevated) !important;
+  box-shadow: var(--qaq-shadow-lg) !important;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--qaq-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--qaq-bg-elevated);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--qaq-light-gray);
+}
+
+/* Remove focus rings and replace with custom styling */
+*:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--qaq-focus) !important;
+}
+
+/* Ensure proper contrast for interactive elements */
+button:hover,
+.cursor-pointer:hover {
+  background-color: var(--qaq-hover) !important;
+}
+
+button:active,
+.cursor-pointer:active {
+  background-color: var(--qaq-active) !important;
+}
+
+/* Project Manager specific overrides */
+.project-card {
+  background-color: var(--qaq-bg-elevated) !important;
+  box-shadow: var(--qaq-shadow-md) !important;
+  transition: all 0.2s ease !important;
+}
+
+.project-card:hover {
+  box-shadow: var(--qaq-shadow-lg) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Editor specific overrides */
+.qaq-editor {
+  background-color: var(--qaq-bg-primary) !important;
+}
+
+.qaq-panel {
+  background-color: var(--qaq-bg-secondary) !important;
+  box-shadow: var(--qaq-shadow-sm) !important;
+}
+
+.qaq-toolbar {
+  background-color: var(--qaq-bg-tertiary) !important;
+}
+
+/* Material Editor specific styling */
+.qaq-material-node {
+  background-color: var(--qaq-bg-elevated) !important;
+  box-shadow: var(--qaq-shadow-md) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.qaq-material-node:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: var(--qaq-shadow-lg) !important;
+}
+
+.qaq-material-node.selected {
+  border-color: var(--qaq-accent) !important;
+  box-shadow: 0 0 0 2px rgba(0, 220, 130, 0.3) !important;
+}
+
+/* Ensure all text is readable */
+.text-black {
+  color: var(--qaq-text-primary) !important;
+}
+
+/* Override any remaining light backgrounds */
+.bg-slate-50,
+.bg-slate-100,
+.bg-slate-200,
+.bg-neutral-50,
+.bg-neutral-100,
+.bg-neutral-200 {
+  background-color: var(--qaq-bg-secondary) !important;
+}
+
+.bg-slate-800,
+.bg-slate-900,
+.bg-neutral-800,
+.bg-neutral-900 {
+  background-color: var(--qaq-bg-primary) !important;
+}
