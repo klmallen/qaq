@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QAQ引擎 - 碰撞调试系统测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .test-area {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .controls {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            margin: 0 0 10px 0;
+            color: #3498db;
+        }
+        
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .control-item label {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .control-item input[type="range"] {
+            flex: 1;
+        }
+        
+        .control-item input[type="checkbox"] {
+            accent-color: #3498db;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 12px;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn.small {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+        
+        .stats {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 QAQ引擎 - 碰撞调试系统测试</h1>
+            <p>测试 CollisionDebugRenderer 和 DebugMaterialManager 的功能</p>
+        </div>
+        
+        <div class="test-area">
+            <div class="canvas-container">
+                <div id="demo-canvas" style="width: 100%; height: 600px;"></div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>🎮 基础控制</h3>
+                    <button class="btn" onclick="startDemo()">启动演示</button>
+                    <button class="btn" onclick="stopDemo()">停止演示</button>
+                    <button class="btn" onclick="runTests()">运行测试</button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🔍 可视化控制</h3>
+                    <div class="control-item">
+                        <label>
+                            <input type="checkbox" id="debugEnabled" checked onchange="toggleDebug()">
+                            显示碰撞体
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <label>透明度:</label>
+                        <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" oninput="updateOpacity()">
+                        <span id="opacityValue">0.5</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🌈 外观控制</h3>
+                    <button class="btn small" onclick="changeColors()">更换颜色</button>
+                    <button class="btn small" onclick="resetColors()">重置颜色</button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>📊 统计信息</h3>
+                    <div id="stats" class="stats">
+                        点击"启动演示"开始...
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>📝 日志输出</h3>
+                    <div id="log" class="log">
+                        等待操作...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { startCollisionDebugDemo, stopCollisionDebugDemo } from './core/collision/demo-collision-debug.ts'
+        import { runAllCollisionDebugTests } from './core/collision/test-collision-debug-renderer.ts'
+        
+        let demoInstance = null
+        
+        // 重定向控制台输出到页面
+        const logElement = document.getElementById('log')
+        const originalLog = console.log
+        const originalError = console.error
+        const originalWarn = console.warn
+        
+        function addLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString()
+            const prefix = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '📝'
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`
+            logElement.scrollTop = logElement.scrollHeight
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args)
+            addLog(args.join(' '), 'log')
+        }
+        
+        console.error = (...args) => {
+            originalError(...args)
+            addLog(args.join(' '), 'error')
+        }
+        
+        console.warn = (...args) => {
+            originalWarn(...args)
+            addLog(args.join(' '), 'warn')
+        }
+        
+        // 全局控制函数
+        window.startDemo = () => {
+            const container = document.getElementById('demo-canvas')
+            if (container) {
+                demoInstance = startCollisionDebugDemo(container)
+                updateStats()
+                console.log('🚀 碰撞调试演示已启动')
+            }
+        }
+        
+        window.stopDemo = () => {
+            stopCollisionDebugDemo()
+            demoInstance = null
+            document.getElementById('stats').textContent = '演示已停止'
+            console.log('🛑 碰撞调试演示已停止')
+        }
+        
+        window.runTests = () => {
+            console.log('🧪 开始运行碰撞系统测试...')
+            runAllCollisionDebugTests()
+        }
+        
+        window.toggleDebug = () => {
+            if (demoInstance) {
+                demoInstance.toggleDebugVisibility()
+                updateStats()
+            }
+        }
+        
+        window.updateOpacity = () => {
+            const slider = document.getElementById('opacitySlider')
+            const value = parseFloat(slider.value)
+            document.getElementById('opacityValue').textContent = value.toFixed(1)
+            
+            if (demoInstance) {
+                demoInstance.setGlobalOpacity(value)
+                updateStats()
+            }
+        }
+        
+        window.changeColors = () => {
+            if (demoInstance) {
+                demoInstance.changeShapeColors()
+                updateStats()
+            }
+        }
+        
+        window.resetColors = () => {
+            console.log('🔄 重置颜色功能待实现')
+        }
+        
+        function updateStats() {
+            if (demoInstance) {
+                const stats = demoInstance.getStats()
+                const statsElement = document.getElementById('stats')
+                statsElement.innerHTML = `
+调试渲染器:
+  启用: ${stats.debugRenderer.enabled ? '是' : '否'}
+  线框数量: ${stats.debugRenderer.wireframeCount}
+
+材质管理器:
+  总材质: ${stats.materialManager.totalMaterials}
+  活跃材质: ${stats.materialManager.activeMaterials}
+  内存使用: ${(stats.materialManager.memoryUsage / 1024).toFixed(1)}KB
+
+形状数量: ${stats.shapes}
+                `.trim()
+            }
+        }
+        
+        // 定期更新统计信息
+        setInterval(() => {
+            if (demoInstance) {
+                updateStats()
+            }
+        }, 1000)
+        
+        console.log('💡 碰撞调试测试页面已加载')
+        console.log('点击"启动演示"开始测试')
+    </script>
+</body>
+</html>
