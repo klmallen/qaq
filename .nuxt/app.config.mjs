@@ -232,6 +232,6 @@ if (import.meta.hot) {
   })
 }
 
-import cfg0 from "C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/app.config.ts"
+import cfg0 from "D:/qaq/app.config.ts"
 
 export default /*@__PURE__*/ defuFn(cfg0, inlineConfig)

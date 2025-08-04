@@ -28,6 +28,7 @@
 
 import Node3D from '../Node3D'
 import PhysicsServer, { CollisionShapeType } from '../../physics/PhysicsServer'
+import CollisionDebugRenderer from '../../collision/CollisionDebugRenderer'
 import type { Vector3 } from '../../../types/core'
 import * as THREE from 'three'
 
@@ -126,6 +127,13 @@ export class CollisionShape3D extends Node3D {
   /** 父物理体引用 */
   private _parentPhysicsBody: any = null
 
+  // 调试可视化属性
+  private _debugEnabled: boolean = false
+  private _debugWireframe: THREE.LineSegments | null = null
+  private _debugColor: number = 0x00ff00
+  private _debugOpacity: number = 0.5
+  private _debugRenderer: CollisionDebugRenderer
+
   // ========================================================================
   // 构造函数和初始化
   // ========================================================================
@@ -139,6 +147,7 @@ export class CollisionShape3D extends Node3D {
     super(name)
 
     this._physicsServer = PhysicsServer.getInstance()
+    this._debugRenderer = CollisionDebugRenderer.getInstance()
 
     this._config = {
       enabled: true,
@@ -146,6 +155,10 @@ export class CollisionShape3D extends Node3D {
       debugColor: 0x00ff00,
       ...config
     }
+
+    // 初始化调试可视化属性
+    this._debugEnabled = this._config.debugVisible || false
+    this._debugColor = this._config.debugColor || 0x00ff00
 
     // CollisionShape3D节点初始化完成
   }
@@ -228,6 +241,79 @@ export class CollisionShape3D extends Node3D {
   }
 
   // ========================================================================
+  // 调试可视化方法
+  // ========================================================================
+
+  /**
+   * 设置调试可视化启用状态
+   * @param enabled 是否启用调试可视化
+   */
+  setDebugEnabled(enabled: boolean): void {
+    if (this._debugEnabled === enabled) return
+
+    this._debugEnabled = enabled
+    if (enabled) {
+      this._createDebugWireframe()
+    } else {
+      this._destroyDebugWireframe()
+    }
+  }
+
+  /**
+   * 获取调试可视化启用状态
+   * @returns 是否启用调试可视化
+   */
+  isDebugEnabled(): boolean {
+    return this._debugEnabled
+  }
+
+  /**
+   * 设置调试线框颜色
+   * @param color 颜色值 (十六进制)
+   */
+  setDebugColor(color: number): void {
+    this._debugColor = color
+    if (this._debugWireframe) {
+      this._debugRenderer.updateWireframeColor(this.id, color)
+    }
+  }
+
+  /**
+   * 获取调试线框颜色
+   * @returns 颜色值
+   */
+  getDebugColor(): number {
+    return this._debugColor
+  }
+
+  /**
+   * 设置调试线框透明度
+   * @param opacity 透明度 (0-1)
+   */
+  setDebugOpacity(opacity: number): void {
+    this._debugOpacity = Math.max(0, Math.min(1, opacity))
+    if (this._debugWireframe) {
+      this._debugRenderer.updateWireframeOpacity(this.id, this._debugOpacity)
+    }
+  }
+
+  /**
+   * 获取调试线框透明度
+   * @returns 透明度值
+   */
+  getDebugOpacity(): number {
+    return this._debugOpacity
+  }
+
+  /**
+   * 获取调试线框对象
+   * @returns 调试线框对象
+   */
+  getDebugWireframe(): THREE.LineSegments | null {
+    return this._debugWireframe
+  }
+
+  // ========================================================================
   // 生命周期方法
   // ========================================================================
 
@@ -248,6 +334,11 @@ export class CollisionShape3D extends Node3D {
 
     if (this._initialized && this._config.enabled) {
       this._updateDebugMesh()
+
+      // 更新调试线框
+      if (this._debugEnabled && this._debugWireframe) {
+        this._updateDebugWireframe()
+      }
     }
   }
 
@@ -255,6 +346,7 @@ export class CollisionShape3D extends Node3D {
    * 节点退出场景树时调用
    */
   _exitTree(): void {
+    this._destroyDebugWireframe()
     this._cleanupShape()
     super._exitTree()
   }
@@ -283,8 +375,12 @@ export class CollisionShape3D extends Node3D {
         this._createDebugMesh()
       }
 
+      // 创建调试线框
+      if (this._debugEnabled) {
+        this._createDebugWireframe()
+      }
+
       this._initialized = true
-      console.log(`CollisionShape3D initialized: ${this.name}`)
 
     } catch (error) {
       console.error(`Failed to initialize CollisionShape3D: ${this.name}`, error)
@@ -508,15 +604,29 @@ export class CollisionShape3D extends Node3D {
   }
 
   /**
+   * 设置碰撞形状
+   * @param type 形状类型
+   * @param parameters 形状参数
+   */
+  setShape(type: CollisionShapeType, parameters: any): void {
+    this._config.type = type
+    this._config.parameters = parameters
+    if (this._initialized) {
+      this._updateShape()
+      // 重新创建调试线框
+      if (this._debugEnabled) {
+        this._destroyDebugWireframe()
+        this._createDebugWireframe()
+      }
+    }
+  }
+
+  /**
    * 设置盒子形状
    * @param size 盒子尺寸
    */
   setBoxShape(size: Vector3): void {
-    this._config.type = CollisionShapeType.BOX
-    this._config.parameters = { size }
-    if (this._initialized) {
-      this._updateShape()
-    }
+    this.setShape(CollisionShapeType.BOX, { size })
   }
 
   /**
@@ -524,11 +634,7 @@ export class CollisionShape3D extends Node3D {
    * @param radius 球体半径
    */
   setSphereShape(radius: number): void {
-    this._config.type = CollisionShapeType.SPHERE
-    this._config.parameters = { radius }
-    if (this._initialized) {
-      this._updateShape()
-    }
+    this.setShape(CollisionShapeType.SPHERE, { radius })
   }
 
   /**
@@ -551,10 +657,97 @@ export class CollisionShape3D extends Node3D {
     }
   }
 
+  // ========================================================================
+  // 私有方法 - 调试线框管理
+  // ========================================================================
+
+  /**
+   * 创建调试线框
+   */
+  private _createDebugWireframe(): void {
+    if (!this._initialized || this._debugWireframe) return
+
+    const wireframe = this._createWireframeForShape()
+    if (wireframe) {
+      this._debugWireframe = wireframe
+      this._debugRenderer.addWireframe(this.id, wireframe)
+      this._updateDebugWireframe()
+    }
+  }
+
+  /**
+   * 更新调试线框
+   */
+  private _updateDebugWireframe(): void {
+    if (!this._debugWireframe) return
+
+    // 同步变换
+    const globalTransform = this.getGlobalTransform()
+    this._debugRenderer.updateWireframeTransform(
+      this.id,
+      globalTransform.position,
+      globalTransform.rotation,
+      globalTransform.scale
+    )
+  }
+
+  /**
+   * 销毁调试线框
+   */
+  private _destroyDebugWireframe(): void {
+    if (this._debugWireframe) {
+      this._debugRenderer.removeWireframe(this.id)
+      this._debugWireframe = null
+    }
+  }
+
+  /**
+   * 根据形状类型创建对应的线框
+   */
+  private _createWireframeForShape(): THREE.LineSegments | null {
+    const config = {
+      color: this._debugColor,
+      opacity: this._debugOpacity
+    }
+
+    switch (this._config.type) {
+      case CollisionShapeType.BOX:
+        const boxSize = this._config.parameters.size
+        return this._debugRenderer.createBoxWireframe(boxSize, config)
+
+      case CollisionShapeType.SPHERE:
+        const sphereRadius = this._config.parameters.radius
+        return this._debugRenderer.createSphereWireframe(sphereRadius, 16, config)
+
+      case CollisionShapeType.CAPSULE:
+        const capsuleParams = this._config.parameters
+        return this._debugRenderer.createCapsuleWireframe(capsuleParams.radius, capsuleParams.height, config)
+
+      case CollisionShapeType.CYLINDER:
+        const cylinderParams = this._config.parameters
+        return this._debugRenderer.createCylinderWireframe(
+          cylinderParams.radiusTop,
+          cylinderParams.radiusBottom,
+          cylinderParams.height,
+          16,
+          config
+        )
+
+      case CollisionShapeType.MESH:
+        const meshGeometry = this._config.parameters.geometry
+        return this._debugRenderer.createMeshWireframe(meshGeometry, config)
+
+      default:
+        console.warn(`Unsupported collision shape type for debug wireframe: ${this._config.type}`)
+        return null
+    }
+  }
+
   /**
    * 销毁碰撞形状
    */
   destroy(): void {
+    this._destroyDebugWireframe()
     this._cleanupShape()
     super.destroy()
   }

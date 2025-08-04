@@ -1,9 +1,9 @@
 {
-  "_hash": "QAYkG4kjsm5G4mAHteMyxyKpSd6NnIgiI2B2XTNGOTU",
+  "_hash": "jMffgOVLaGbEKLAlsHg-uigizyZ-fo3mem-SaNKUSec",
   "project": {
-    "rootDir": "C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine"
+    "rootDir": "D:/qaq"
   },
   "versions": {
-    "nuxt": "3.17.7"
+    "nuxt": "3.18.0"
   }
 }

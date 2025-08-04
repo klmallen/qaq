@@ -59,6 +59,77 @@
           {{ loadingStatus }}
         </p>
       </div>
+
+      <div class="info-panel">
+        <h3>🔍 碰撞调试</h3>
+        <div class="control-group">
+          <label class="control-item">
+            <input type="checkbox" v-model="collisionDebugEnabled" @change="toggleCollisionDebug">
+            显示碰撞体
+          </label>
+
+          <div class="control-item" v-if="collisionDebugEnabled">
+            <label>透明度: {{ collisionOpacity.toFixed(1) }}</label>
+            <input type="range" min="0" max="1" step="0.1" v-model="collisionOpacity" @input="updateCollisionOpacity">
+          </div>
+
+          <div class="control-buttons" v-if="collisionDebugEnabled">
+            <button @click="runCollisionTests" class="test-btn small">运行测试</button>
+            <button @click="changeCollisionColors" class="test-btn small">更换颜色</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <h3>🔄 动画同步</h3>
+        <div class="control-group">
+          <label class="control-item">
+            <input type="checkbox" v-model="animationSyncEnabled" @change="toggleAnimationSync">
+            启用动画同步
+          </label>
+
+          <div class="control-item" v-if="animationSyncEnabled">
+            <label>同步策略:</label>
+            <select v-model="syncStrategy" @change="updateSyncStrategy" class="sync-select">
+              <option value="realtime">实时同步</option>
+              <option value="keyframe">关键帧同步</option>
+              <option value="threshold">阈值同步</option>
+              <option value="manual">手动同步</option>
+            </select>
+          </div>
+
+          <div class="control-item" v-if="animationSyncEnabled && syncStrategy === 'threshold'">
+            <label>位置阈值: {{ positionThreshold.toFixed(3) }}</label>
+            <input type="range" min="0.001" max="0.1" step="0.001" v-model="positionThreshold" @input="updateSyncThresholds">
+          </div>
+
+          <div class="control-buttons" v-if="animationSyncEnabled">
+            <button @click="runAnimationSyncTests" class="test-btn small">同步测试</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <h3>🎯 碰撞节点</h3>
+        <div class="control-group">
+          <div class="control-buttons">
+            <button @click="runCollisionNodesTests" class="test-btn small">节点测试</button>
+            <button @click="showCollisionStats" class="test-btn small">显示统计</button>
+          </div>
+
+          <div class="control-item">
+            <label>角色控制器: {{ characterBody ? '已创建' : '未创建' }}</label>
+          </div>
+
+          <div class="control-item">
+            <label>检测区域: {{ detectionArea ? '已创建' : '未创建' }}</label>
+          </div>
+
+          <div class="control-item">
+            <label>碰撞管理器: {{ collisionManager ? '已启用' : '未启用' }}</label>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -67,6 +138,8 @@
 import { Engine, Scene, Node3D, MeshInstance3D, Camera3D, DirectionalLight3D, ScriptManager, ScriptBase, AnimationPlayer } from '~/core'
 import AnimationStateMachine from '~/core/nodes/animation/AnimationStateMachine'
 import AnimationDebugger from '~/core/nodes/animation/AnimationDebugger'
+// 简化的碰撞系统集成 - 移除复杂的异步加载
+// 这些功能将在用户点击时动态加载
 import { testCircularReferenceFix } from '~/core/editor/test-circular-reference-fix'
 import { runSerializationFixTests } from '~/core/editor/test-serialization-fix'
 import '~/core/editor/SceneManagementAPI'
@@ -88,8 +161,29 @@ const gameCanvas = ref<HTMLElement>()
 const loadingStatus = ref<string>('准备初始化...')
 const currentAnimationName = ref<string>('无')
 
+// 碰撞调试相关变量
+const collisionDebugEnabled = ref(true)
+const collisionOpacity = ref(0.5)
+const showStaticBodies = ref(true)
+const showRigidBodies = ref(true)
+const showAreas = ref(true)
+const showCharacterBodies = ref(true)
+
+// 动画同步相关变量
+const animationSyncEnabled = ref(false)
+const syncStrategy = ref<any>('threshold')
+const syncUpdateFrequency = ref(30)
+const positionThreshold = ref(0.01)
+const rotationThreshold = ref(0.017)
+
 // 全局变量
 let character: MeshInstance3D | null = null
+let engine: Engine | null = null
+let animationSync: any = null
+let characterCollisionShape: any = null
+let characterBody: any = null
+let detectionArea: any = null
+let collisionManager: any = null
 
 /**
  * 设置角色动画状态机
@@ -305,6 +399,117 @@ const cycleAnimation = () => {
   }
 }
 
+// 碰撞调试控制方法
+const toggleCollisionDebug = async () => {
+  try {
+    const { default: CollisionDebugRenderer } = await import('~/core/collision/CollisionDebugRenderer')
+    const debugRenderer = CollisionDebugRenderer.getInstance()
+    debugRenderer.setEnabled(collisionDebugEnabled.value)
+    console.log(`🔍 碰撞调试: ${collisionDebugEnabled.value ? '开启' : '关闭'}`)
+  } catch (error) {
+    console.error('❌ 加载碰撞调试渲染器失败:', error)
+  }
+}
+
+const updateCollisionOpacity = async () => {
+  try {
+    const { default: CollisionDebugRenderer } = await import('~/core/collision/CollisionDebugRenderer')
+    const debugRenderer = CollisionDebugRenderer.getInstance()
+    debugRenderer.setGlobalOpacity(collisionOpacity.value)
+    console.log(`🎨 碰撞透明度: ${collisionOpacity.value}`)
+  } catch (error) {
+    console.error('❌ 加载碰撞调试渲染器失败:', error)
+  }
+}
+
+const changeCollisionColors = () => {
+  console.log('🌈 更换碰撞颜色功能待实现')
+}
+
+const runCollisionTests = async () => {
+  try {
+    const { runAllCollisionDebugTests } = await import('~/core/collision/test-collision-debug-renderer')
+    console.log('🧪 开始运行碰撞系统测试...')
+    runAllCollisionDebugTests()
+  } catch (error) {
+    console.error('❌ 加载碰撞测试函数失败:', error)
+  }
+}
+
+// 动画同步控制方法
+const toggleAnimationSync = () => {
+  if (!animationSync || !character) {
+    console.warn('⚠️ 动画同步系统未初始化')
+    return
+  }
+
+  if (animationSyncEnabled.value) {
+    animationSync.startSync()
+    console.log('🔄 动画碰撞同步已启用')
+  } else {
+    animationSync.stopSync()
+    console.log('⏹️ 动画碰撞同步已禁用')
+  }
+}
+
+const updateSyncStrategy = () => {
+  if (animationSync) {
+    animationSync.updateConfig({ strategy: syncStrategy.value })
+    console.log(`⚙️ 同步策略已更新为: ${syncStrategy.value}`)
+  }
+}
+
+const updateSyncThresholds = () => {
+  if (animationSync) {
+    animationSync.updateConfig({
+      thresholds: {
+        position: positionThreshold.value,
+        rotation: rotationThreshold.value,
+        scale: 0.01
+      }
+    })
+    console.log(`🎯 同步阈值已更新`)
+  }
+}
+
+const runAnimationSyncTests = async () => {
+  try {
+    const { runAllAnimationCollisionTests } = await import('~/core/collision/test-animation-collision-sync')
+    console.log('🧪 开始运行动画同步测试...')
+    runAllAnimationCollisionTests()
+  } catch (error) {
+    console.error('❌ 加载动画同步测试函数失败:', error)
+  }
+}
+
+// 碰撞节点控制方法
+const runCollisionNodesTests = async () => {
+  try {
+    const { runAllCollisionNodesTests } = await import('~/core/collision/test-collision-nodes')
+    console.log('🧪 开始运行碰撞节点测试...')
+    runAllCollisionNodesTests()
+  } catch (error) {
+    console.error('❌ 加载碰撞节点测试函数失败:', error)
+  }
+}
+
+const showCollisionStats = () => {
+  if (collisionManager) {
+    const stats = collisionManager.getStats()
+    console.log('📊 碰撞管理器统计:', stats)
+  }
+
+  if (characterBody) {
+    const bodyStats = characterBody.getStats()
+    console.log('🏃 角色控制器统计:', bodyStats)
+  }
+
+  if (detectionArea) {
+    const areaStats = detectionArea.getStats()
+    console.log('🎯 检测区域统计:', areaStats)
+  }
+}
+
 onMounted(async () => {
   if (!gameCanvas.value) return
 
@@ -323,6 +528,10 @@ onMounted(async () => {
     })
 
     console.log('✅ 引擎初始化完成')
+
+    // 碰撞系统将在需要时动态加载
+    console.log('� 碰撞系统将在使用时动态加载')
+
     loadingStatus.value = '注册脚本类中...'
 
     const scriptManager = ScriptManager.getInstance()
@@ -437,6 +646,12 @@ onMounted(async () => {
     character.castShadow = true
     root.addChild(character)
 
+    // 碰撞系统组件将在需要时动态创建
+    console.log('💡 角色碰撞组件将在启用碰撞调试时创建')
+
+    // 检测区域将在需要时动态创建
+    console.log('💡 检测区域将在启用碰撞节点功能时创建')
+
     try {
       // 使用MeshInstance3D的loadModel方法（内部使用增强的GLTF加载器）
       const result = await character.loadModel('/leikedun.glb')
@@ -459,6 +674,9 @@ onMounted(async () => {
       const animationPlayer = new AnimationPlayer()
       character.addChild(animationPlayer as any)
       animationPlayer.setTargetModel(character)
+
+      // 动画碰撞同步系统将在需要时动态创建
+      console.log('� 动画碰撞同步系统将在启用同步功能时创建')
 
       // 配置智能过渡
       animationPlayer.setGlobalTransitionTime(0.3) // 默认0.3秒过渡
@@ -790,6 +1008,57 @@ onUnmounted(() => {
 
 .test-btn:active {
   transform: translateY(1px);
+}
+
+.test-btn.small {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+/* 碰撞调试控制样式 */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.control-item input[type="checkbox"] {
+  accent-color: #3498db;
+}
+
+.control-item input[type="range"] {
+  flex: 1;
+  accent-color: #3498db;
+}
+
+.control-item label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  min-width: 60px;
+}
+
+/* 动画同步控制样式 */
+.sync-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  padding: 2px 6px;
+  font-size: 11px;
+  flex: 1;
+}
+
+.sync-select:focus {
+  outline: none;
+  border-color: #3498db;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* 响应式设计 */

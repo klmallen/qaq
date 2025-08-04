@@ -3,45 +3,45 @@ import { Server } from 'node:http';
 import path, { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
 import { parentPort, threadId } from 'node:worker_threads';
-import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getResponseStatus, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getRouterParam, assertMethod, getHeaders, setCookie, getCookie, getHeader, getMethod, getResponseStatusText } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/h3@1.15.3/node_modules/h3/dist/index.mjs';
-import { escapeHtml } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/@vue+shared@3.5.17/node_modules/@vue/shared/dist/shared.cjs.js';
-import { PrismaClient } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/@prisma+client@6.12.0_prism_852c2f508fa5d5c04099a9cee124d4df/node_modules/@prisma/client/default.js';
+import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getResponseStatus, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getRouterParam, assertMethod, getHeaders, setCookie, getCookie, getHeader, getMethod, getResponseStatusText } from 'file://D:/qaq/node_modules/h3/dist/index.mjs';
+import { escapeHtml } from 'file://D:/qaq/node_modules/@vue/shared/dist/shared.cjs.js';
+import { PrismaClient } from 'file://D:/qaq/node_modules/@prisma/client/default.js';
 import fs, { readFile } from 'node:fs/promises';
-import bcrypt from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/bcryptjs@3.0.2/node_modules/bcryptjs/index.js';
-import { jwtVerify, SignJWT } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/jose@6.0.12/node_modules/jose/dist/webapi/index.js';
-import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/vue-bundle-renderer@2.1.1/node_modules/vue-bundle-renderer/dist/runtime.mjs';
-import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/ufo@1.6.1/node_modules/ufo/dist/index.mjs';
-import { renderToString } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/vue@3.5.17_typescript@5.8.3/node_modules/vue/server-renderer/index.mjs';
-import { klona } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/klona@2.0.6/node_modules/klona/dist/index.mjs';
-import defu, { defuFn } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/defu@6.1.4/node_modules/defu/dist/defu.mjs';
-import destr, { destr as destr$1 } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/destr@2.0.5/node_modules/destr/dist/index.mjs';
-import { snakeCase } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/scule@1.3.0/node_modules/scule/dist/index.mjs';
-import { createHead as createHead$1, propsToString, renderSSRHead } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/unhead@2.0.12/node_modules/unhead/dist/server.mjs';
-import { stringify, uneval } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/devalue@5.1.1/node_modules/devalue/index.js';
-import { isVNode, toValue, isRef } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/vue@3.5.17_typescript@5.8.3/node_modules/vue/index.mjs';
-import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/unhead@2.0.12/node_modules/unhead/dist/plugins.mjs';
-import { createHooks } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/hookable@5.5.3/node_modules/hookable/dist/index.mjs';
-import { createFetch, Headers as Headers$1 } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/ofetch@1.4.1/node_modules/ofetch/dist/node.mjs';
-import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/node-mock-http@1.0.1/node_modules/node-mock-http/dist/index.mjs';
-import { createStorage, prefixStorage } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/unstorage@1.16.1_@netlify+b_9eab9aea5adb9dcafaf8e5d8fd9fc244/node_modules/unstorage/dist/index.mjs';
-import unstorage_47drivers_47fs from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/unstorage@1.16.1_@netlify+b_9eab9aea5adb9dcafaf8e5d8fd9fc244/node_modules/unstorage/drivers/fs.mjs';
-import { digest, hash as hash$1 } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/ohash@2.0.11/node_modules/ohash/dist/index.mjs';
-import { toRouteMatcher, createRouter } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/radix3@1.1.2/node_modules/radix3/dist/index.mjs';
-import consola, { consola as consola$1 } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/consola@3.4.2/node_modules/consola/dist/index.mjs';
-import { ErrorParser } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/youch-core@0.3.3/node_modules/youch-core/build/index.js';
-import { Youch } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/youch@4.1.0-beta.8/node_modules/youch/build/index.js';
-import { SourceMapConsumer } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/source-map@0.7.4/node_modules/source-map/source-map.js';
+import bcrypt from 'file://D:/qaq/node_modules/bcryptjs/index.js';
+import { jwtVerify, SignJWT } from 'file://D:/qaq/node_modules/jose/dist/webapi/index.js';
+import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file://D:/qaq/node_modules/vue-bundle-renderer/dist/runtime.mjs';
+import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file://D:/qaq/node_modules/ufo/dist/index.mjs';
+import { renderToString } from 'file://D:/qaq/node_modules/vue/server-renderer/index.mjs';
+import { klona } from 'file://D:/qaq/node_modules/klona/dist/index.mjs';
+import defu, { defuFn } from 'file://D:/qaq/node_modules/defu/dist/defu.mjs';
+import destr, { destr as destr$1 } from 'file://D:/qaq/node_modules/destr/dist/index.mjs';
+import { snakeCase } from 'file://D:/qaq/node_modules/scule/dist/index.mjs';
+import { createHead as createHead$1, propsToString, renderSSRHead } from 'file://D:/qaq/node_modules/unhead/dist/server.mjs';
+import { stringify, uneval } from 'file://D:/qaq/node_modules/devalue/index.js';
+import { isVNode, toValue, isRef } from 'file://D:/qaq/node_modules/vue/index.mjs';
+import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file://D:/qaq/node_modules/unhead/dist/plugins.mjs';
+import { createHooks } from 'file://D:/qaq/node_modules/hookable/dist/index.mjs';
+import { createFetch, Headers as Headers$1 } from 'file://D:/qaq/node_modules/ofetch/dist/node.mjs';
+import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file://D:/qaq/node_modules/node-mock-http/dist/index.mjs';
+import { createStorage, prefixStorage } from 'file://D:/qaq/node_modules/unstorage/dist/index.mjs';
+import unstorage_47drivers_47fs from 'file://D:/qaq/node_modules/unstorage/drivers/fs.mjs';
+import { digest, hash as hash$1 } from 'file://D:/qaq/node_modules/ohash/dist/index.mjs';
+import { toRouteMatcher, createRouter } from 'file://D:/qaq/node_modules/radix3/dist/index.mjs';
+import consola, { consola as consola$1 } from 'file://D:/qaq/node_modules/consola/dist/index.mjs';
+import { ErrorParser } from 'file://D:/qaq/node_modules/youch-core/build/index.js';
+import { Youch } from 'file://D:/qaq/node_modules/youch/build/index.js';
+import { SourceMapConsumer } from 'file://D:/qaq/node_modules/nitropack/node_modules/source-map/source-map.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { getContext } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/unctx@2.4.1/node_modules/unctx/dist/index.mjs';
-import { captureRawStackTrace, parseRawStackTrace } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/errx@0.1.0/node_modules/errx/dist/index.js';
+import { getContext } from 'file://D:/qaq/node_modules/unctx/dist/index.mjs';
+import { captureRawStackTrace, parseRawStackTrace } from 'file://D:/qaq/node_modules/errx/dist/index.js';
 import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname as dirname$1, resolve as resolve$1, basename } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/pathe@2.0.3/node_modules/pathe/dist/index.mjs';
-import { getIcons } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/@iconify+utils@2.3.0/node_modules/@iconify/utils/lib/index.mjs';
-import { collections } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/.nuxt/nuxt-icon-server-bundle.mjs';
-import { walkResolver } from 'file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/unhead@2.0.12/node_modules/unhead/dist/utils.mjs';
+import { dirname as dirname$1, resolve as resolve$1, basename } from 'file://D:/qaq/node_modules/pathe/dist/index.mjs';
+import { getIcons } from 'file://D:/qaq/node_modules/@iconify/utils/lib/index.mjs';
+import { collections } from 'file://D:/qaq/.nuxt/nuxt-icon-server-bundle.mjs';
+import { walkResolver } from 'file://D:/qaq/node_modules/unhead/dist/utils.mjs';
 
-const serverAssets = [{"baseName":"server","dir":"C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/server/assets"}];
+const serverAssets = [{"baseName":"server","dir":"D:/qaq/server/assets"}];
 
 const assets$1 = createStorage();
 
@@ -53,11 +53,11 @@ const storage = createStorage({});
 
 storage.mount('/assets', assets$1);
 
-storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine","watchOptions":{"ignored":[null]}}));
-storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/server","watchOptions":{"ignored":[null]}}));
-storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/.nuxt"}));
-storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/.nuxt/cache"}));
-storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/.data/kv"}));
+storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"D:/qaq","watchOptions":{"ignored":[null]}}));
+storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"D:/qaq/server","watchOptions":{"ignored":[null]}}));
+storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"D:/qaq/.nuxt"}));
+storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"D:/qaq/.nuxt/cache"}));
+storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"D:/qaq/.data/kv"}));
 
 function useStorage(base = "") {
   return base ? prefixStorage(storage, base) : storage;
@@ -1278,13 +1278,13 @@ if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
 window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 `;
 
-const _HvMUo5KSdv1Y8pXp7SEVoXQn_MFxgRFNtg7tiIx00 = (function(nitro) {
+const _cyMY6HTD9rsjRj1uUebckEJ1E7xjlxf9zpeq8v2ikDg = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script$1}<\/script>`);
   });
 });
 
-const rootDir = "C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine";
+const rootDir = "D:/qaq";
 
 const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[],"style":[],"script":[],"noscript":[]};
 
@@ -1303,7 +1303,7 @@ const devReducers = {
   URL: (data) => data instanceof URL ? data.toString() : void 0
 };
 const asyncContext = getContext("nuxt-dev", { asyncContext: true, AsyncLocalStorage });
-const _QsOLj5F5ImquL_uA5bC45853MOJwgcuolXopspLoT54 = (nitroApp) => {
+const _hI5UQpYgeWsDCAnNWVsyR29IBjETealzSWR7S7_hMw = (nitroApp) => {
   const handler = nitroApp.h3App.handler;
   nitroApp.h3App.handler = (event) => {
     return asyncContext.callAsync({ logs: [], event }, () => handler(event));
@@ -1374,16 +1374,16 @@ function onConsoleLog(callback) {
 
 const script = "\"use strict\";(()=>{const t=window,e=document.documentElement,c=[\"dark\",\"light\"],n=getStorageValue(\"localStorage\",\"nuxt-color-mode\")||\"dark\";let i=n===\"system\"?u():n;const r=e.getAttribute(\"data-color-mode-forced\");r&&(i=r),l(i),t[\"__NUXT_COLOR_MODE__\"]={preference:n,value:i,getColorScheme:u,addColorScheme:l,removeColorScheme:d};function l(o){const s=\"\"+o+\"\",a=\"\";e.classList?e.classList.add(s):e.className+=\" \"+s,a&&e.setAttribute(\"data-\"+a,o)}function d(o){const s=\"\"+o+\"\",a=\"\";e.classList?e.classList.remove(s):e.className=e.className.replace(new RegExp(s,\"g\"),\"\"),a&&e.removeAttribute(\"data-\"+a)}function f(o){return t.matchMedia(\"(prefers-color-scheme\"+o+\")\")}function u(){if(t.matchMedia&&f(\"\").media!==\"not all\"){for(const o of c)if(f(\":\"+o).matches)return o}return\"light\"}})();function getStorageValue(t,e){switch(t){case\"localStorage\":return window.localStorage.getItem(e);case\"sessionStorage\":return window.sessionStorage.getItem(e);case\"cookie\":return getCookie(e);default:return null}}function getCookie(t){const c=(\"; \"+window.document.cookie).split(\"; \"+t+\"=\");if(c.length===2)return c.pop()?.split(\";\").shift()}";
 
-const _MxrUNJEwxNInBqIez_VT2HK8owHc1EA_bAmzsuittM = (function(nitro) {
+const _Y98gzG2HmYfPlCmslVooho2GFEyJ9T47dNbWn9Qsp4 = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script}<\/script>`);
   });
 });
 
 const plugins = [
-  _HvMUo5KSdv1Y8pXp7SEVoXQn_MFxgRFNtg7tiIx00,
-_QsOLj5F5ImquL_uA5bC45853MOJwgcuolXopspLoT54,
-_MxrUNJEwxNInBqIez_VT2HK8owHc1EA_bAmzsuittM
+  _cyMY6HTD9rsjRj1uUebckEJ1E7xjlxf9zpeq8v2ikDg,
+_hI5UQpYgeWsDCAnNWVsyR29IBjETealzSWR7S7_hMw,
+_Y98gzG2HmYfPlCmslVooho2GFEyJ9T47dNbWn9Qsp4
 ];
 
 const assets = {};
@@ -1411,7 +1411,7 @@ function getAsset (id) {
 
 const METHODS = /* @__PURE__ */ new Set(["HEAD", "GET"]);
 const EncodingMap = { gzip: ".gz", br: ".br" };
-const __W42PQ = eventHandler((event) => {
+const _9OMHdf = eventHandler((event) => {
   if (event.method && !METHODS.has(event.method)) {
     return;
   }
@@ -1595,7 +1595,7 @@ class MockPrismaClient {
 }
 async function loadPrismaClient() {
   try {
-    const prismaModule = await import('file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/node_modules/.pnpm/@prisma+client@6.12.0_prism_852c2f508fa5d5c04099a9cee124d4df/node_modules/@prisma/client/default.js');
+    const prismaModule = await import('file://D:/qaq/node_modules/@prisma/client/default.js');
     let PrismaClientClass;
     if (prismaModule.default) {
       if (typeof prismaModule.default === "function") {
@@ -2310,7 +2310,7 @@ async function getAuthService$2() {
 
 const warnOnceSet = /* @__PURE__ */ new Set();
 const DEFAULT_ENDPOINT = "https://api.iconify.design";
-const _N2GGbz = defineCachedEventHandler(async (event) => {
+const _tHKnoS = defineCachedEventHandler(async (event) => {
   const url = getRequestURL(event);
   if (!url)
     return createError({ status: 400, message: "Invalid icon request" });
@@ -2428,7 +2428,7 @@ function setSSRError(ssrContext, error) {
 const APP_ROOT_OPEN_TAG = `<${appRootTag}${propsToString(appRootAttrs)}>`;
 const APP_ROOT_CLOSE_TAG = `</${appRootTag}>`;
 const getServerEntry = () => Promise.resolve().then(function () { return server$1; }).then((r) => r.default || r);
-const getClientManifest = () => import('file://C:/Users/EDY/Downloads/godot-master/godot-master/qaq-game-engine/.nuxt/dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
+const getClientManifest = () => import('file://D:/qaq/.nuxt//dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
 const getSSRRenderer = lazyCachedFunction(async () => {
   const manifest = await getClientManifest();
   if (!manifest) {
@@ -2674,42 +2674,42 @@ async function getIslandContext(event) {
   return ctx;
 }
 
-const _lazy_IQJf9J = () => Promise.resolve().then(function () { return login_post$1; });
-const _lazy__6RXd0 = () => Promise.resolve().then(function () { return logout_post$1; });
-const _lazy_iA8uiU = () => Promise.resolve().then(function () { return me_get$1; });
-const _lazy_9qmboz = () => Promise.resolve().then(function () { return refresh_post$1; });
-const _lazy_WN2mCO = () => Promise.resolve().then(function () { return register_post$1; });
-const _lazy_obj7DO = () => Promise.resolve().then(function () { return testToken_post$1; });
-const _lazy_Ix4_AY = () => Promise.resolve().then(function () { return create_post$3; });
-const _lazy_ZpKRwQ = () => Promise.resolve().then(function () { return demo_get$1; });
-const _lazy_1bPTcg = () => Promise.resolve().then(function () { return projects_get$1; });
-const _lazy_WF9C24 = () => Promise.resolve().then(function () { return rename_patch$1; });
-const _lazy_8Vk4PN = () => Promise.resolve().then(function () { return createSimple_post$1; });
-const _lazy_bgGERo = () => Promise.resolve().then(function () { return create_post$1; });
-const _lazy_r_s5SZ = () => Promise.resolve().then(function () { return debug_post$1; });
-const _lazy_dQ59zi = () => Promise.resolve().then(function () { return test_get$1; });
-const _lazy_AlKOj8 = () => Promise.resolve().then(function () { return renderer$1; });
+const _lazy_LN_59J = () => Promise.resolve().then(function () { return login_post$1; });
+const _lazy_F4fYmx = () => Promise.resolve().then(function () { return logout_post$1; });
+const _lazy_hnjbTJ = () => Promise.resolve().then(function () { return me_get$1; });
+const _lazy_oFzEkA = () => Promise.resolve().then(function () { return refresh_post$1; });
+const _lazy_RmVVy4 = () => Promise.resolve().then(function () { return register_post$1; });
+const _lazy_TrahQK = () => Promise.resolve().then(function () { return testToken_post$1; });
+const _lazy_3cwiJR = () => Promise.resolve().then(function () { return create_post$3; });
+const _lazy_R0SHr7 = () => Promise.resolve().then(function () { return demo_get$1; });
+const _lazy_7oQ6qh = () => Promise.resolve().then(function () { return projects_get$1; });
+const _lazy_0OCBDy = () => Promise.resolve().then(function () { return rename_patch$1; });
+const _lazy_yluLrh = () => Promise.resolve().then(function () { return createSimple_post$1; });
+const _lazy_PTHjnY = () => Promise.resolve().then(function () { return create_post$1; });
+const _lazy_KteElG = () => Promise.resolve().then(function () { return debug_post$1; });
+const _lazy_xVkiBk = () => Promise.resolve().then(function () { return test_get$1; });
+const _lazy__jWOhI = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
-  { route: '', handler: __W42PQ, lazy: false, middleware: true, method: undefined },
-  { route: '/api/auth/login', handler: _lazy_IQJf9J, lazy: true, middleware: false, method: "post" },
-  { route: '/api/auth/logout', handler: _lazy__6RXd0, lazy: true, middleware: false, method: "post" },
-  { route: '/api/auth/me', handler: _lazy_iA8uiU, lazy: true, middleware: false, method: "get" },
-  { route: '/api/auth/refresh', handler: _lazy_9qmboz, lazy: true, middleware: false, method: "post" },
-  { route: '/api/auth/register', handler: _lazy_WN2mCO, lazy: true, middleware: false, method: "post" },
-  { route: '/api/auth/test-token', handler: _lazy_obj7DO, lazy: true, middleware: false, method: "post" },
-  { route: '/api/example/create', handler: _lazy_Ix4_AY, lazy: true, middleware: false, method: "post" },
-  { route: '/api/example/demo', handler: _lazy_ZpKRwQ, lazy: true, middleware: false, method: "get" },
-  { route: '/api/projects', handler: _lazy_1bPTcg, lazy: true, middleware: false, method: "get" },
-  { route: '/api/projects/:id/rename', handler: _lazy_WF9C24, lazy: true, middleware: false, method: "patch" },
-  { route: '/api/projects/create-simple', handler: _lazy_8Vk4PN, lazy: true, middleware: false, method: "post" },
-  { route: '/api/projects/create', handler: _lazy_bgGERo, lazy: true, middleware: false, method: "post" },
-  { route: '/api/projects/debug', handler: _lazy_r_s5SZ, lazy: true, middleware: false, method: "post" },
-  { route: '/api/projects/test', handler: _lazy_dQ59zi, lazy: true, middleware: false, method: "get" },
-  { route: '/__nuxt_error', handler: _lazy_AlKOj8, lazy: true, middleware: false, method: undefined },
-  { route: '/api/_nuxt_icon/:collection', handler: _N2GGbz, lazy: false, middleware: false, method: undefined },
+  { route: '', handler: _9OMHdf, lazy: false, middleware: true, method: undefined },
+  { route: '/api/auth/login', handler: _lazy_LN_59J, lazy: true, middleware: false, method: "post" },
+  { route: '/api/auth/logout', handler: _lazy_F4fYmx, lazy: true, middleware: false, method: "post" },
+  { route: '/api/auth/me', handler: _lazy_hnjbTJ, lazy: true, middleware: false, method: "get" },
+  { route: '/api/auth/refresh', handler: _lazy_oFzEkA, lazy: true, middleware: false, method: "post" },
+  { route: '/api/auth/register', handler: _lazy_RmVVy4, lazy: true, middleware: false, method: "post" },
+  { route: '/api/auth/test-token', handler: _lazy_TrahQK, lazy: true, middleware: false, method: "post" },
+  { route: '/api/example/create', handler: _lazy_3cwiJR, lazy: true, middleware: false, method: "post" },
+  { route: '/api/example/demo', handler: _lazy_R0SHr7, lazy: true, middleware: false, method: "get" },
+  { route: '/api/projects', handler: _lazy_7oQ6qh, lazy: true, middleware: false, method: "get" },
+  { route: '/api/projects/:id/rename', handler: _lazy_0OCBDy, lazy: true, middleware: false, method: "patch" },
+  { route: '/api/projects/create-simple', handler: _lazy_yluLrh, lazy: true, middleware: false, method: "post" },
+  { route: '/api/projects/create', handler: _lazy_PTHjnY, lazy: true, middleware: false, method: "post" },
+  { route: '/api/projects/debug', handler: _lazy_KteElG, lazy: true, middleware: false, method: "post" },
+  { route: '/api/projects/test', handler: _lazy_xVkiBk, lazy: true, middleware: false, method: "get" },
+  { route: '/__nuxt_error', handler: _lazy__jWOhI, lazy: true, middleware: false, method: undefined },
+  { route: '/api/_nuxt_icon/:collection', handler: _tHKnoS, lazy: false, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
-  { route: '/**', handler: _lazy_AlKOj8, lazy: true, middleware: false, method: undefined }
+  { route: '/**', handler: _lazy__jWOhI, lazy: true, middleware: false, method: undefined }
 ];
 
 function createNitroApp() {
