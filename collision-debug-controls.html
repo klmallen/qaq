@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>碰撞调试控制面板</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .panel {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .panel h1 {
+            color: #00ff00;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(0, 255, 0, 0.1);
+            border-radius: 5px;
+        }
+        .section h3 {
+            color: #00ff00;
+            margin-top: 0;
+        }
+        .command {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            border-left: 4px solid #00ff00;
+        }
+        .command code {
+            color: #ffff00;
+        }
+        .description {
+            color: #ccc;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .button {
+            background: #333;
+            color: white;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            display: inline-block;
+        }
+        .button:hover {
+            background: #00ff00;
+            color: black;
+        }
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status">
+        <div>状态: <span id="statusText">等待初始化...</span></div>
+    </div>
+
+    <div class="panel">
+        <h1>🔍 碰撞调试控制面板</h1>
+        
+        <div class="section">
+            <h3>📋 使用说明</h3>
+            <p>1. 首先访问 <strong>/demo-3d</strong> 页面</p>
+            <p>2. 等待3D场景加载完成</p>
+            <p>3. 使用WASD键移动角色，Q/E键旋转</p>
+            <p>4. 使用下面的控制台命令或按钮控制碰撞调试</p>
+        </div>
+
+        <div class="section">
+            <h3>🏃 角色移动控制</h3>
+            <div class="command">
+                <strong>键盘控制:</strong><br>
+                • WASD/方向键: 移动角色<br>
+                • Q/E: 旋转角色<br>
+                • 移动时会实时检测碰撞并在控制台显示
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🎮 轨道控制器</h3>
+            <div class="command">
+                <strong>鼠标控制:</strong><br>
+                • 左键拖拽: 旋转相机<br>
+                • 右键拖拽: 平移相机<br>
+                • 滚轮: 缩放
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🔍 碰撞调试命令</h3>
+            
+            <div class="command">
+                <code>debugControls.toggleAllCollisionDebug(true)</code>
+                <div class="description">显示所有碰撞包围盒</div>
+                <button class="button" onclick="toggleDebug(true)">显示碰撞</button>
+                <button class="button" onclick="toggleDebug(false)">隐藏碰撞</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.setAllCollisionDebugColor(0xff0000)</code>
+                <div class="description">设置碰撞调试颜色</div>
+                <button class="button" onclick="setColor(0xff0000)">红色</button>
+                <button class="button" onclick="setColor(0x00ff00)">绿色</button>
+                <button class="button" onclick="setColor(0x0000ff)">蓝色</button>
+                <button class="button" onclick="setColor(0xffff00)">黄色</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.setAllCollisionDebugOpacity(0.5)</code>
+                <div class="description">设置碰撞调试透明度</div>
+                <button class="button" onclick="setOpacity(0.1)">10%</button>
+                <button class="button" onclick="setOpacity(0.3)">30%</button>
+                <button class="button" onclick="setOpacity(0.5)">50%</button>
+                <button class="button" onclick="setOpacity(0.8)">80%</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.help()</code>
+                <div class="description">显示完整帮助信息</div>
+                <button class="button" onclick="showHelp()">显示帮助</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🧪 碰撞测试控制</h3>
+
+            <div class="command">
+                <code>debugControls.testCollision()</code>
+                <div class="description">测试当前角色碰撞状态</div>
+                <button class="button" onclick="testCollision()">测试碰撞</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.testCollisionWithCubeA()</code>
+                <div class="description">快速测试与立方体A的碰撞</div>
+                <button class="button" onclick="testCubeA()">测试立方体A</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.testCollisionWithCubeB()</code>
+                <div class="description">快速测试与立方体B的碰撞</div>
+                <button class="button" onclick="testCubeB()">测试立方体B</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.resetCharacterPosition()</code>
+                <div class="description">重置角色到原点</div>
+                <button class="button" onclick="resetPosition()">重置位置</button>
+            </div>
+
+            <div class="command">
+                <code>debugControls.moveCharacterTo(x, y, z)</code>
+                <div class="description">移动角色到指定位置</div>
+                <button class="button" onclick="moveToCustom()">自定义移动</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🎯 单个对象控制</h3>
+            <div class="command">
+                <code>character.toggleCollisionDebug(true)</code>
+                <div class="description">控制角色碰撞调试</div>
+                <button class="button" onclick="toggleCharacter(true)">显示角色</button>
+                <button class="button" onclick="toggleCharacter(false)">隐藏角色</button>
+            </div>
+
+            <div class="command">
+                <code>cubeA.toggleCollisionDebug(true)</code>
+                <div class="description">控制立方体A碰撞调试</div>
+                <button class="button" onclick="toggleCubeA(true)">显示立方体A</button>
+                <button class="button" onclick="toggleCubeA(false)">隐藏立方体A</button>
+            </div>
+
+            <div class="command">
+                <code>cubeB.toggleCollisionDebug(true)</code>
+                <div class="description">控制立方体B碰撞调试</div>
+                <button class="button" onclick="toggleCubeB(true)">显示立方体B</button>
+                <button class="button" onclick="toggleCubeB(false)">隐藏立方体B</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 状态更新
+        function updateStatus(text, color = '#00ff00') {
+            const statusText = document.getElementById('statusText')
+            statusText.textContent = text
+            statusText.style.color = color
+        }
+
+        // 检查调试控制器是否可用
+        function checkDebugControls() {
+            if (window.debugControls) {
+                updateStatus('调试控制器已就绪', '#00ff00')
+                return true
+            } else {
+                updateStatus('等待调试控制器初始化...', '#ffff00')
+                return false
+            }
+        }
+
+        // 控制函数
+        function toggleDebug(visible) {
+            if (checkDebugControls()) {
+                window.debugControls.toggleAllCollisionDebug(visible)
+            }
+        }
+
+        function setColor(color) {
+            if (checkDebugControls()) {
+                window.debugControls.setAllCollisionDebugColor(color)
+            }
+        }
+
+        function setOpacity(opacity) {
+            if (checkDebugControls()) {
+                window.debugControls.setAllCollisionDebugOpacity(opacity)
+            }
+        }
+
+        function showHelp() {
+            if (checkDebugControls()) {
+                window.debugControls.help()
+            } else {
+                console.log('请先访问 /demo-3d 页面加载调试控制器')
+            }
+        }
+
+        function toggleCharacter(visible) {
+            if (window.character && window.character.toggleCollisionDebug) {
+                window.character.toggleCollisionDebug(visible)
+            } else {
+                console.log('角色对象未找到，请确保已访问 /demo-3d 页面')
+            }
+        }
+
+        function toggleCubeA(visible) {
+            if (window.cubeA && window.cubeA.toggleCollisionDebug) {
+                window.cubeA.toggleCollisionDebug(visible)
+            } else {
+                console.log('立方体A对象未找到，请确保已访问 /demo-3d 页面')
+            }
+        }
+
+        function toggleCubeB(visible) {
+            if (window.cubeB && window.cubeB.toggleCollisionDebug) {
+                window.cubeB.toggleCollisionDebug(visible)
+            } else {
+                console.log('立方体B对象未找到，请确保已访问 /demo-3d 页面')
+            }
+        }
+
+        // 碰撞测试函数
+        function testCollision() {
+            if (window.debugControls) {
+                window.debugControls.testCollision()
+            } else {
+                console.log('请先访问 /demo-3d 页面加载调试控制器')
+            }
+        }
+
+        function testCubeA() {
+            if (window.debugControls) {
+                window.debugControls.testCollisionWithCubeA()
+            } else {
+                console.log('请先访问 /demo-3d 页面加载调试控制器')
+            }
+        }
+
+        function testCubeB() {
+            if (window.debugControls) {
+                window.debugControls.testCollisionWithCubeB()
+            } else {
+                console.log('请先访问 /demo-3d 页面加载调试控制器')
+            }
+        }
+
+        function resetPosition() {
+            if (window.debugControls) {
+                window.debugControls.resetCharacterPosition()
+            } else {
+                console.log('请先访问 /demo-3d 页面加载调试控制器')
+            }
+        }
+
+        function moveToCustom() {
+            const x = prompt('输入X坐标:', '0')
+            const y = prompt('输入Y坐标:', '0')
+            const z = prompt('输入Z坐标:', '0')
+
+            if (x !== null && y !== null && z !== null) {
+                if (window.debugControls) {
+                    window.debugControls.moveCharacterTo(parseFloat(x), parseFloat(y), parseFloat(z))
+                } else {
+                    console.log('请先访问 /demo-3d 页面加载调试控制器')
+                }
+            }
+        }
+
+        // 定期检查状态
+        setInterval(checkDebugControls, 2000)
+
+        // 初始化
+        window.addEventListener('load', () => {
+            console.log('🎮 碰撞调试控制面板已加载')
+            console.log('请访问 /demo-3d 页面查看实际效果')
+            checkDebugControls()
+        })
+    </script>
+</body>
+</html>

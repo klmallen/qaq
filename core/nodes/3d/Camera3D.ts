@@ -976,10 +976,31 @@ export class Camera3D extends Camera {
       throw new Error('无法启用轨道控制器：引擎或渲染器未初始化')
     }
 
+    const renderer = engine.getRenderer()!
+    console.log('🎮 启用轨道控制器:', {
+      camera: !!this.threeCamera,
+      renderer: !!renderer,
+      domElement: !!renderer.domElement,
+      target
+    })
+
     if (!this._orbitControls) {
-      this._orbitControls = new OrbitControls(this.threeCamera, engine.getRenderer()!.domElement)
-      this._orbitControls.target.set(target.x, target.y, target.z)
-      this._orbitControls.update()
+      try {
+        this._orbitControls = new OrbitControls(this.threeCamera, renderer.domElement)
+        this._orbitControls.target.set(target.x, target.y, target.z)
+        this._orbitControls.enableDamping = true
+        this._orbitControls.dampingFactor = 0.05
+        this._orbitControls.screenSpacePanning = false
+        this._orbitControls.minDistance = 1
+        this._orbitControls.maxDistance = 100
+        this._orbitControls.maxPolarAngle = Math.PI / 2
+        this._orbitControls.update()
+
+        console.log('✅ 轨道控制器创建成功')
+      } catch (error) {
+        console.error('❌ 轨道控制器创建失败:', error)
+        throw error
+      }
     }
 
     this._orbitControls.enabled = true

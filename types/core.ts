@@ -247,12 +247,44 @@ export interface RenderingSettings {
 }
 
 export interface InputSettings {
-  actions: { [key: string]: InputAction }
+  globalDeadzone: number
+  mouseSensitivity: number
+  gamepadSensitivity: number
+  smoothingFactor: number
+  enableGamepad: boolean
+  enableMouse: boolean
+  enableKeyboard: boolean
+  actions?: { [key: string]: InputAction }
 }
 
 export interface InputAction {
   deadzone: number
   events: InputEvent[]
+}
+
+export interface InputActionValue {
+  value: boolean | number | Vector2 | Vector3
+  type: string
+}
+
+export interface InputMappingContext {
+  name: string
+  priority: number
+  mappings: { [key: string]: string }
+}
+
+export interface GamepadState {
+  connected: boolean
+  buttons: boolean[]
+  axes: number[]
+  timestamp: number
+}
+
+export interface Quaternion {
+  x: number
+  y: number
+  z: number
+  w: number
 }
 
 export interface InputEvent {

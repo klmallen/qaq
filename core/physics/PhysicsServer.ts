@@ -27,10 +27,8 @@
  */
 
 import * as THREE from 'three'
+import * as CANNON from 'cannon-es'
 import type { Vector3 } from '../../types/core'
-
-// 简化的Cannon-ES类型声明 - 在实际项目中应该导入真实的cannon-es模块
-declare const CANNON: any
 
 // ============================================================================
 // 物理系统相关枚举和接口
@@ -386,6 +384,9 @@ export class PhysicsServer {
     // 设置默认材质
     body.material = this._materials.get('default')!
 
+    // 设置物理体ID以便追踪
+    body.id = id
+
     // 添加到物理世界
     this._world!.addBody(body)
     this._bodies.set(id, body)
@@ -599,31 +600,65 @@ export class PhysicsServer {
    * @param deltaTime 时间增量（秒）
    */
   step(deltaTime: number): void {
-    this.ensureInitialized()
+    try {
+      this.ensureInitialized()
 
-    const currentTime = Date.now() / 1000
-    if (this._lastTime === 0) {
+      const currentTime = Date.now() / 1000
+      if (this._lastTime === 0) {
+        this._lastTime = currentTime
+      }
+
+      const dt = currentTime - this._lastTime
       this._lastTime = currentTime
+
+      // 使用固定时间步长进行仿真
+      this._world!.step(this._fixedTimeStep, dt, this._maxSubSteps)
+    } catch (error) {
+      console.warn('Physics step error:', error)
+      // 不要重新抛出错误，以免中断渲染循环
     }
-
-    const dt = currentTime - this._lastTime
-    this._lastTime = currentTime
-
-    // 使用固定时间步长进行仿真
-    this._world!.step(this._fixedTimeStep, dt, this._maxSubSteps)
   }
 
   /**
-   * 同步物理体到Three.js对象
-   * @param physicsBody 物理体
+   * 同步物理体到Three.js对象（改进版）
+   * @param physicsBody CANNON物理体
    * @param threeObject Three.js对象
    */
   syncToThreeObject(physicsBody: any, threeObject: THREE.Object3D): void {
-    // 同步位置
-    threeObject.position.copy(physicsBody.position as any)
+    try {
+      // 确保是CANNON物理体
+      if (!physicsBody || !physicsBody.position || !physicsBody.quaternion) {
+        console.warn('Invalid physics body for sync:', physicsBody)
+        return
+      }
 
-    // 同步旋转
-    threeObject.quaternion.copy(physicsBody.quaternion as any)
+      // 同步位置 - 直接使用CANNON的Vec3
+      threeObject.position.set(
+        physicsBody.position.x,
+        physicsBody.position.y,
+        physicsBody.position.z
+      )
+
+      // 同步旋转 - 直接使用CANNON的Quaternion
+      threeObject.quaternion.set(
+        physicsBody.quaternion.x,
+        physicsBody.quaternion.y,
+        physicsBody.quaternion.z,
+        physicsBody.quaternion.w
+      )
+
+    } catch (error) {
+      console.warn('Physics sync error:', error)
+    }
+  }
+
+  /**
+   * 批量同步所有物理体到渲染对象
+   */
+  syncAllBodies(): void {
+    // 这个方法将在每帧被Engine调用
+    // 目前RigidBody3D自己处理同步，所以这里暂时为空
+    // 未来可以在这里实现全局的批量同步优化
   }
 
   /**

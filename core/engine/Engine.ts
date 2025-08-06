@@ -23,6 +23,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Scene from '../scene/Scene'
 import type { SceneChangeOptions } from '../scene/types'
 import type { Vector2, Vector3 } from '../../types/core'
+import { InputManager } from '../input/InputManager'
 
 // 使用类型导入避免循环依赖
 type SceneTree = any
@@ -184,6 +185,9 @@ export class Engine {
   // 私有属性 - 事件和输入
   // ========================================================================
 
+  /** 输入管理器 */
+  private _inputManager: InputManager | null = null
+
   /** 鼠标射线投射器 */
   private _raycaster: THREE.Raycaster | null = null
 
@@ -283,6 +287,9 @@ export class Engine {
 
       // 初始化事件系统
       this._initializeEventSystem()
+
+      // 初始化输入管理系统
+      await this._initializeInputSystem()
 
       // 设置渲染循环
       this._setupRenderLoop()
@@ -476,6 +483,26 @@ export class Engine {
   }
 
   /**
+   * 初始化输入管理系统
+   */
+  private async _initializeInputSystem(): Promise<void> {
+    this._inputManager = InputManager.getInstance()
+
+    // 初始化输入管理器
+    await this._inputManager.initialize({
+      globalDeadzone: 0.1,
+      mouseSensitivity: 1.0,
+      gamepadSensitivity: 1.0,
+      smoothingFactor: 0.1,
+      enableGamepad: true,
+      enableMouse: true,
+      enableKeyboard: true
+    })
+
+    console.log('✅ Input system initialized')
+  }
+
+  /**
    * 设置渲染循环
    */
   private _setupRenderLoop(): void {
@@ -528,6 +555,22 @@ export class Engine {
    */
   getCamera3D(): THREE.PerspectiveCamera | null {
     return this._camera3D
+  }
+
+  /**
+   * 获取输入管理器（类似UE5的全局访问方式）
+   * @returns 输入管理器实例
+   */
+  get input(): InputManager | null {
+    return this._inputManager
+  }
+
+  /**
+   * 获取输入管理器（方法形式）
+   * @returns 输入管理器实例
+   */
+  getInputManager(): InputManager | null {
+    return this._inputManager
   }
 
   /**
@@ -734,6 +777,12 @@ export class Engine {
     if (this._renderer && this._scene && this._activeCamera) {
       const deltaTime = 0.016 // 假设60FPS，每帧约16ms
 
+      // 更新输入系统
+      this._updateInputSystem(deltaTime)
+
+      // 更新物理系统
+      this._updatePhysicsSystem(deltaTime)
+
       // 更新脚本系统
       this._updateScriptSystem(deltaTime)
 
@@ -742,6 +791,59 @@ export class Engine {
         this._currentQAQScene._process(deltaTime)
       }
       this._renderer.render(this._scene, this._activeCamera)
+    }
+  }
+
+  /**
+   * 更新输入系统
+   * @param deltaTime 时间增量
+   */
+  private _updateInputSystem(deltaTime: number): void {
+    if (this._inputManager) {
+      this._inputManager.update(deltaTime)
+    }
+  }
+
+  /**
+   * 更新物理系统
+   * @param deltaTime 时间增量
+   */
+  private _updatePhysicsSystem(deltaTime: number): void {
+    try {
+      // 检查全局PhysicsServer是否可用
+      if (typeof window !== 'undefined' && (window as any).PhysicsServer) {
+        const PhysicsServer = (window as any).PhysicsServer
+        const physicsServer = PhysicsServer.getInstance()
+        if (physicsServer && physicsServer.initialized) {
+          // 执行物理步进
+          physicsServer.step(deltaTime)
+
+          // 执行批量同步（未来优化点）
+          physicsServer.syncAllBodies()
+
+          // 每100帧输出一次调试信息
+          if (this._frameCount % 100 === 0) {
+            console.debug('🔄 Physics step:', {
+              deltaTime,
+              bodyCount: physicsServer.bodyCount,
+              stepCount: physicsServer.stepCount || 0
+            })
+          }
+        } else {
+          if (this._frameCount % 300 === 0) { // 每5秒提示一次
+            console.debug('⚠️ PhysicsServer not ready:', {
+              available: !!physicsServer,
+              initialized: physicsServer?.initialized
+            })
+          }
+        }
+      } else {
+        if (this._frameCount % 300 === 0) { // 每5秒提示一次
+          console.debug('⚠️ PhysicsServer not found in window')
+        }
+      }
+    } catch (error) {
+      console.warn('Physics update error:', error)
     }
   }
 

@@ -134,6 +134,20 @@ export class CollisionShape3D extends Node3D {
   private _debugOpacity: number = 0.5
   private _debugRenderer: CollisionDebugRenderer
 
+  // 新增：碰撞状态管理
+  private _currentCollisions: Array<CollisionShape3D> = []
+  private _isColliding: boolean = false
+  private _latestCollision: CollisionShape3D | null = null
+
+  // 新增：碰撞回调
+  private _onCollisionEnter: ((other: CollisionShape3D) => void) | null = null
+  private _onCollisionExit: ((other: CollisionShape3D) => void) | null = null
+  private _onCollisionStay: ((other: CollisionShape3D) => void) | null = null
+
+  // 新增：调试可视化网格（独立于调试线框）
+  private _debugVisualizationMesh: THREE.Mesh | null = null
+  private _debugVisible: boolean = false
+
   // ========================================================================
   // 构造函数和初始化
   // ========================================================================
@@ -159,6 +173,7 @@ export class CollisionShape3D extends Node3D {
     // 初始化调试可视化属性
     this._debugEnabled = this._config.debugVisible || false
     this._debugColor = this._config.debugColor || 0x00ff00
+    this._debugVisible = this._config.debugVisible || false
 
     // CollisionShape3D节点初始化完成
   }
@@ -305,6 +320,194 @@ export class CollisionShape3D extends Node3D {
     return this._debugOpacity
   }
 
+  // ========================================================================
+  // 新增：碰撞形状可视化网格方法
+  // ========================================================================
+
+  /**
+   * 设置调试可视化网格显示状态
+   * @param visible 是否显示调试网格
+   */
+  setDebugVisible(visible: boolean): void {
+    if (this._debugVisible === visible) return
+
+    this._debugVisible = visible
+    if (visible) {
+      this._createDebugVisualizationMesh()
+    } else {
+      this._removeDebugVisualizationMesh()
+    }
+  }
+
+  /**
+   * 获取调试可视化网格显示状态
+   * @returns 是否显示调试网格
+   */
+  isDebugVisible(): boolean {
+    return this._debugVisible
+  }
+
+  /**
+   * 设置调试网格颜色（基于碰撞状态）
+   * @param color 颜色值
+   */
+  setDebugMeshColor(color: number): void {
+    if (this._debugVisualizationMesh && this._debugVisualizationMesh.material instanceof THREE.MeshBasicMaterial) {
+      this._debugVisualizationMesh.material.color.setHex(color)
+    }
+  }
+
+  /**
+   * 设置调试网格透明度
+   * @param opacity 透明度 (0-1)
+   */
+  setDebugMeshOpacity(opacity: number): void {
+    if (this._debugVisualizationMesh && this._debugVisualizationMesh.material instanceof THREE.MeshBasicMaterial) {
+      this._debugVisualizationMesh.material.opacity = Math.max(0, Math.min(1, opacity))
+    }
+  }
+
+  // ========================================================================
+  // 新增：碰撞回调和数据管理方法
+  // ========================================================================
+
+  /**
+   * 设置碰撞进入回调
+   * @param callback 碰撞进入时的回调函数
+   */
+  setOnCollisionEnter(callback: (other: CollisionShape3D) => void): void {
+    this._onCollisionEnter = callback
+  }
+
+  /**
+   * 设置碰撞退出回调
+   * @param callback 碰撞退出时的回调函数
+   */
+  setOnCollisionExit(callback: (other: CollisionShape3D) => void): void {
+    this._onCollisionExit = callback
+  }
+
+  /**
+   * 设置碰撞持续回调
+   * @param callback 碰撞持续时的回调函数
+   */
+  setOnCollisionStay(callback: (other: CollisionShape3D) => void): void {
+    this._onCollisionStay = callback
+  }
+
+  /**
+   * 获取当前碰撞对象列表
+   * @returns 当前碰撞的对象数组
+   */
+  getCurrentCollisions(): Array<CollisionShape3D> {
+    return [...this._currentCollisions]
+  }
+
+  /**
+   * 获取最近的碰撞对象
+   * @returns 最近碰撞的对象，如果没有则返回null
+   */
+  getLatestCollision(): CollisionShape3D | null {
+    return this._latestCollision
+  }
+
+  /**
+   * 检查是否正在碰撞
+   * @returns 是否正在与其他对象碰撞
+   */
+  isColliding(): boolean {
+    return this._isColliding
+  }
+
+  /**
+   * 检查是否与特定对象碰撞
+   * @param other 要检查的碰撞对象
+   * @returns 是否与指定对象碰撞
+   */
+  isCollidingWith(other: CollisionShape3D): boolean {
+    return this._currentCollisions.includes(other)
+  }
+
+  // ========================================================================
+  // 新增：内部碰撞处理方法
+  // ========================================================================
+
+  /**
+   * 处理碰撞进入事件
+   * @param other 碰撞的其他对象
+   */
+  _handleCollisionEnter(other: CollisionShape3D): void {
+    if (!this._currentCollisions.includes(other)) {
+      this._currentCollisions.push(other)
+      this._latestCollision = other
+      this._isColliding = true
+
+      // 更新调试网格颜色为红色（碰撞状态）
+      this._updateDebugMeshForCollision(true)
+
+      // 触发碰撞进入回调
+      if (this._onCollisionEnter) {
+        this._onCollisionEnter(other)
+      }
+
+      console.log(`🔴 碰撞进入: ${this.name} <-> ${other.name}`)
+    }
+  }
+
+  /**
+   * 处理碰撞退出事件
+   * @param other 退出碰撞的其他对象
+   */
+  _handleCollisionExit(other: CollisionShape3D): void {
+    const index = this._currentCollisions.indexOf(other)
+    if (index !== -1) {
+      this._currentCollisions.splice(index, 1)
+
+      // 如果没有其他碰撞，更新状态
+      if (this._currentCollisions.length === 0) {
+        this._isColliding = false
+        this._latestCollision = null
+
+        // 更新调试网格颜色为绿色（正常状态）
+        this._updateDebugMeshForCollision(false)
+      } else {
+        // 更新最新碰撞为列表中的最后一个
+        this._latestCollision = this._currentCollisions[this._currentCollisions.length - 1]
+      }
+
+      // 触发碰撞退出回调
+      if (this._onCollisionExit) {
+        this._onCollisionExit(other)
+      }
+
+      console.log(`🟢 碰撞退出: ${this.name} <-> ${other.name}`)
+    }
+  }
+
+  /**
+   * 处理碰撞持续事件
+   * @param other 持续碰撞的其他对象
+   */
+  _handleCollisionStay(other: CollisionShape3D): void {
+    if (this._currentCollisions.includes(other)) {
+      // 触发碰撞持续回调
+      if (this._onCollisionStay) {
+        this._onCollisionStay(other)
+      }
+    }
+  }
+
+  /**
+   * 更新调试网格的碰撞状态颜色
+   * @param isColliding 是否正在碰撞
+   */
+  private _updateDebugMeshForCollision(isColliding: boolean): void {
+    if (this._debugVisualizationMesh && this._debugVisible) {
+      const color = isColliding ? 0xff0000 : 0x00ff00 // 红色：碰撞，绿色：正常
+      this.setDebugMeshColor(color)
+    }
+  }
+
   /**
    * 获取调试线框对象
    * @returns 调试线框对象
@@ -332,13 +535,22 @@ export class CollisionShape3D extends Node3D {
   _process(deltaTime: number): void {
     super._process(deltaTime)
 
+    // 调试：检查 _process 是否被调用
+    if (Math.random() < 0.001) { // 0.1%概率输出，减少日志
+      console.log(`🔄 ${this.name}: _process 被调用，初始化=${this._initialized}，启用=${this._config.enabled}`)
+    }
+
     if (this._initialized && this._config.enabled) {
-      this._updateDebugMesh()
+      // 更新调试可视化网格
+      this._updateDebugVisualizationMesh()
 
       // 更新调试线框
       if (this._debugEnabled && this._debugWireframe) {
         this._updateDebugWireframe()
       }
+
+      // 执行碰撞检测
+      this._performCollisionDetection()
     }
   }
 
@@ -347,7 +559,14 @@ export class CollisionShape3D extends Node3D {
    */
   _exitTree(): void {
     this._destroyDebugWireframe()
+    this._removeDebugVisualizationMesh()
     this._cleanupShape()
+
+    // 清理碰撞状态
+    this._currentCollisions = []
+    this._isColliding = false
+    this._latestCollision = null
+
     super._exitTree()
   }
 
@@ -359,31 +578,45 @@ export class CollisionShape3D extends Node3D {
    * 初始化碰撞形状
    */
   private _initializeShape(): void {
-    if (this._initialized || !this._physicsServer.initialized) {
+    if (this._initialized) {
+      console.log(`⚠️ ${this.name}: 已经初始化，跳过`)
       return
     }
+
+    // 检查 PhysicsServer 状态
+    if (!this._physicsServer.initialized) {
+      console.log(`⚠️ ${this.name}: PhysicsServer 未初始化，跳过初始化`)
+      return
+    }
+
+    console.log(`🔧 ${this.name}: 开始初始化碰撞形状...`)
 
     try {
       // 创建物理形状
       this._createPhysicsShape()
+      console.log(`✅ ${this.name}: 物理形状创建成功`)
 
       // 查找父物理体
       this._findParentPhysicsBody()
+      console.log(`✅ ${this.name}: 父物理体查找完成`)
 
-      // 创建调试网格
-      if (this._config.debugVisible) {
-        this._createDebugMesh()
+      // 创建调试可视化网格
+      if (this._debugVisible) {
+        this._createDebugVisualizationMesh()
+        console.log(`✅ ${this.name}: 调试可视化网格创建完成`)
       }
 
       // 创建调试线框
       if (this._debugEnabled) {
         this._createDebugWireframe()
+        console.log(`✅ ${this.name}: 调试线框创建完成`)
       }
 
       this._initialized = true
+      console.log(`🎉 ${this.name}: 碰撞形状初始化完成！`)
 
     } catch (error) {
-      console.error(`Failed to initialize CollisionShape3D: ${this.name}`, error)
+      console.error(`❌ ${this.name}: 碰撞形状初始化失败:`, error)
     }
   }
 
@@ -412,6 +645,17 @@ export class CollisionShape3D extends Node3D {
         )
         break
 
+      case CollisionShapeType.CAPSULE:
+        const capsuleParams = this._config.parameters as { radius: number, height: number }
+        // 使用圆柱体作为胶囊的替代（临时解决方案）
+        this._physicsShape = this._physicsServer.createCylinderShape(
+          capsuleParams.radius,
+          capsuleParams.radius,
+          capsuleParams.height
+        )
+        console.log(`⚠️ ${this.name}: CAPSULE 形状使用圆柱体替代`)
+        break
+
       case CollisionShapeType.PLANE:
         this._physicsShape = this._physicsServer.createPlaneShape()
         break
@@ -432,23 +676,48 @@ export class CollisionShape3D extends Node3D {
   private _findParentPhysicsBody(): void {
     let parent = this.parent
     while (parent) {
-      if ('physicsBody' in parent && parent.physicsBody) {
-        this._parentPhysicsBody = parent.physicsBody
+      // 检查是否是 RigidBody3D 或 StaticBody3D
+      if (parent.constructor.name === 'RigidBody3D' || parent.constructor.name === 'StaticBody3D') {
+        this._parentPhysicsBody = parent
+        console.log(`✅ ${this.name}: 找到父物理体 ${parent.name} (${parent.constructor.name})`)
+
         // 将形状添加到父物理体
         if (this._physicsShape && this._config.enabled) {
-          this._parentPhysicsBody.addShape(this._physicsShape)
+          try {
+            // 检查父物理体是否有 addCollisionShape 方法
+            if (typeof parent.addCollisionShape === 'function') {
+              parent.addCollisionShape(this._physicsShape)
+              console.log(`✅ ${this.name}: 碰撞形状已添加到父物理体`)
+            } else {
+              console.warn(`⚠️ ${this.name}: 父物理体没有 addCollisionShape 方法`)
+            }
+          } catch (error) {
+            console.error(`❌ ${this.name}: 添加碰撞形状到父物理体失败:`, error)
+          }
         }
         break
       }
+
+      // 检查是否有 physicsBody 属性（备用方案）
+      if ('physicsBody' in parent && parent.physicsBody) {
+        this._parentPhysicsBody = parent.physicsBody
+        console.log(`✅ ${this.name}: 找到父物理体属性 ${parent.physicsBody.name}`)
+        break
+      }
+
       parent = parent.parent
+    }
+
+    if (!this._parentPhysicsBody) {
+      console.warn(`⚠️ ${this.name}: 未找到父物理体`)
     }
   }
 
   /**
-   * 创建调试网格
+   * 创建调试可视化网格
    */
-  private _createDebugMesh(): void {
-    if (!this.object3D) return
+  private _createDebugVisualizationMesh(): void {
+    if (!this.object3D || this._debugVisualizationMesh) return
 
     let geometry: THREE.BufferGeometry
 
@@ -473,6 +742,11 @@ export class CollisionShape3D extends Node3D {
         )
         break
 
+      case CollisionShapeType.CAPSULE:
+        const capsuleParams = this._config.parameters as { radius: number, height: number }
+        geometry = new THREE.CapsuleGeometry(capsuleParams.radius, capsuleParams.height - 2 * capsuleParams.radius, 4, 8)
+        break
+
       case CollisionShapeType.PLANE:
         geometry = new THREE.PlaneGeometry(10, 10)
         break
@@ -483,18 +757,204 @@ export class CollisionShape3D extends Node3D {
         break
 
       default:
+        console.warn(`Unsupported collision shape type for debug visualization: ${this._config.type}`)
         return
     }
 
+    // 创建材质，默认绿色（正常状态）
     const material = new THREE.MeshBasicMaterial({
-      color: this._config.debugColor,
+      color: 0x00ff00, // 绿色：正常状态
       wireframe: true,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.3
     })
 
-    this._debugMesh = new THREE.Mesh(geometry, material)
-    this.object3D.add(this._debugMesh)
+    this._debugVisualizationMesh = new THREE.Mesh(geometry, material)
+    this._debugVisualizationMesh.name = `${this.name}_DebugVisualization`
+    this.object3D.add(this._debugVisualizationMesh)
+
+    console.log(`🔍 创建碰撞调试可视化网格: ${this.name}`)
+  }
+
+  /**
+   * 移除调试可视化网格
+   */
+  private _removeDebugVisualizationMesh(): void {
+    if (this._debugVisualizationMesh && this.object3D) {
+      this.object3D.remove(this._debugVisualizationMesh)
+      this._debugVisualizationMesh.geometry.dispose()
+      if (this._debugVisualizationMesh.material instanceof THREE.Material) {
+        this._debugVisualizationMesh.material.dispose()
+      }
+      this._debugVisualizationMesh = null
+      console.log(`🗑️ 移除碰撞调试可视化网格: ${this.name}`)
+    }
+  }
+
+  /**
+   * 更新调试可视化网格
+   */
+  private _updateDebugVisualizationMesh(): void {
+    if (this._debugVisualizationMesh && this.object3D) {
+      // 同步变换
+      this._debugVisualizationMesh.position.copy(this.object3D.position)
+      this._debugVisualizationMesh.rotation.copy(this.object3D.rotation)
+      this._debugVisualizationMesh.scale.copy(this.object3D.scale)
+    }
+  }
+
+  /**
+   * 执行碰撞检测
+   */
+  private _performCollisionDetection(): void {
+    if (!this._physicsShape || !this.object3D) {
+      console.log(`⚠️ ${this.name}: 碰撞检测跳过 - 缺少物理形状或3D对象`)
+      return
+    }
+
+    // 获取场景根节点 - 通过向上遍历找到场景根节点
+    const sceneRoot = this._findSceneRoot()
+    if (!sceneRoot) {
+      console.log(`⚠️ ${this.name}: 碰撞检测跳过 - 未找到场景根节点`)
+      return
+    }
+
+    const allCollisionShapes = this._findAllCollisionShapes(sceneRoot)
+    const previousCollisions = [...this._currentCollisions]
+
+    // 调试日志（仅在第一次或有变化时输出）
+    if (allCollisionShapes.length > 1 && Math.random() < 0.01) { // 1%概率输出，减少日志
+      console.log(`🔍 ${this.name}: 开始碰撞检测，找到 ${allCollisionShapes.length} 个碰撞形状`)
+    }
+
+    // 清空当前碰撞列表，重新检测
+    this._currentCollisions = []
+
+    for (const other of allCollisionShapes) {
+      if (other === this || !other._config.enabled) continue
+
+      // 简单的包围盒碰撞检测
+      const isColliding = this._checkCollisionWith(other)
+
+      if (isColliding) {
+        console.log(`💥 ${this.name} 检测到与 ${other.name} 的碰撞`)
+        this._currentCollisions.push(other)
+
+        // 检查是否是新的碰撞
+        if (!previousCollisions.includes(other)) {
+          console.log(`🔴 ${this.name} 开始碰撞 ${other.name}`)
+          this._handleCollisionEnter(other)
+          other._handleCollisionEnter(this)
+        } else {
+          // 持续碰撞
+          this._handleCollisionStay(other)
+          other._handleCollisionStay(this)
+        }
+      }
+    }
+
+    // 检查退出的碰撞
+    for (const previousCollision of previousCollisions) {
+      if (!this._currentCollisions.includes(previousCollision)) {
+        console.log(`🟢 ${this.name} 结束碰撞 ${previousCollision.name}`)
+        this._handleCollisionExit(previousCollision)
+        previousCollision._handleCollisionExit(this)
+      }
+    }
+
+    // 更新碰撞状态
+    this._isColliding = this._currentCollisions.length > 0
+    if (this._isColliding && this._currentCollisions.length > 0) {
+      this._latestCollision = this._currentCollisions[this._currentCollisions.length - 1]
+    }
+  }
+
+  /**
+   * 查找场景根节点
+   * @returns 场景根节点
+   */
+  private _findSceneRoot(): Node | null {
+    let current: Node | null = this
+    let depth = 0
+
+    // 向上遍历直到找到没有父节点的根节点
+    while (current && current.parent) {
+      current = current.parent
+      depth++
+
+      // 防止无限循环
+      if (depth > 100) {
+        console.warn(`⚠️ ${this.name}: 场景树深度超过100层，可能存在循环引用`)
+        break
+      }
+    }
+
+    if (current && Math.random() < 0.01) { // 1%概率输出调试信息
+      console.log(`🌳 ${this.name}: 找到场景根节点 "${current.name}"，深度=${depth}`)
+    }
+
+    return current
+  }
+
+  /**
+   * 查找场景中的所有碰撞形状
+   * @param node 要搜索的节点
+   * @returns 碰撞形状数组
+   */
+  private _findAllCollisionShapes(node: Node): CollisionShape3D[] {
+    const collisionShapes: CollisionShape3D[] = []
+
+    // 检查当前节点
+    if (node instanceof CollisionShape3D) {
+      collisionShapes.push(node)
+    }
+
+    // 递归检查子节点
+    for (const child of node.children) {
+      collisionShapes.push(...this._findAllCollisionShapes(child))
+    }
+
+    return collisionShapes
+  }
+
+  /**
+   * 检查与另一个碰撞形状的碰撞
+   * @param other 另一个碰撞形状
+   * @returns 是否发生碰撞
+   */
+  private _checkCollisionWith(other: CollisionShape3D): boolean {
+    if (!this.object3D || !other.object3D) {
+      console.log(`⚠️ 碰撞检测失败: ${this.name} 或 ${other.name} 缺少3D对象`)
+      return false
+    }
+
+    try {
+      // 获取世界坐标系下的包围盒
+      const thisBox = new THREE.Box3().setFromObject(this.object3D)
+      const otherBox = new THREE.Box3().setFromObject(other.object3D)
+
+      // 简单的AABB碰撞检测
+      const isIntersecting = thisBox.intersectsBox(otherBox)
+
+      // 调试信息（仅在发生碰撞时输出）
+      if (isIntersecting) {
+        console.log(`🔍 检查碰撞: ${this.name} vs ${other.name}`)
+        console.log(`  ${this.name} 包围盒:`, {
+          min: { x: thisBox.min.x.toFixed(2), y: thisBox.min.y.toFixed(2), z: thisBox.min.z.toFixed(2) },
+          max: { x: thisBox.max.x.toFixed(2), y: thisBox.max.y.toFixed(2), z: thisBox.max.z.toFixed(2) }
+        })
+        console.log(`  ${other.name} 包围盒:`, {
+          min: { x: otherBox.min.x.toFixed(2), y: otherBox.min.y.toFixed(2), z: otherBox.min.z.toFixed(2) },
+          max: { x: otherBox.max.x.toFixed(2), y: otherBox.max.y.toFixed(2), z: otherBox.max.z.toFixed(2) }
+        })
+        console.log(`  碰撞结果: ${isIntersecting}`)
+      }
+
+      return isIntersecting
+    } catch (error) {
+      console.error(`❌ 碰撞检测错误: ${this.name} vs ${other.name}`, error)
+      return false
+    }
   }
 
   /**
@@ -524,10 +984,10 @@ export class CollisionShape3D extends Node3D {
       this._parentPhysicsBody.addShape(this._physicsShape)
     }
 
-    // 更新调试网格
-    if (this._config.debugVisible) {
-      this._removeDebugMesh()
-      this._createDebugMesh()
+    // 更新调试可视化网格
+    if (this._debugVisible) {
+      this._removeDebugVisualizationMesh()
+      this._createDebugVisualizationMesh()
     }
   }
 
@@ -557,12 +1017,12 @@ export class CollisionShape3D extends Node3D {
    * 更新调试可视化
    */
   private _updateDebugVisibility(): void {
-    if (this._config.debugVisible) {
-      if (!this._debugMesh) {
-        this._createDebugMesh()
+    if (this._debugVisible) {
+      if (!this._debugVisualizationMesh) {
+        this._createDebugVisualizationMesh()
       }
     } else {
-      this._removeDebugMesh()
+      this._removeDebugVisualizationMesh()
     }
   }
 

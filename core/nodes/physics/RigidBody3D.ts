@@ -499,17 +499,88 @@ export class RigidBody3D extends Node3D {
    * 同步变换到物理体
    */
   private _syncToPhysics(): void {
-    if (this._physicsBody && this.object3D) {
-      this._physicsServer.syncFromThreeObject(this.object3D, this._physicsBody)
+    if (!this._physicsBody) return
+
+    try {
+      // 直接使用QAQ节点的位置和旋转
+      if (this._physicsBody.position && this.position) {
+        this._physicsBody.position.set(this.position.x, this.position.y, this.position.z)
+      }
+
+      // 如果有旋转信息，也同步（简化版，避免Three.js依赖）
+      if (this._physicsBody.quaternion && this.rotation) {
+        // 简单的欧拉角到四元数转换（仅Y轴旋转）
+        const halfY = this.rotation.y * 0.5
+        this._physicsBody.quaternion.set(0, Math.sin(halfY), 0, Math.cos(halfY))
+      }
+
+      console.log(`🔄 同步QAQ位置到物理体 ${this.name}: ${JSON.stringify(this.position)}`)
+    } catch (error) {
+      console.warn(`Failed to sync to physics for ${this.name}:`, error)
     }
   }
 
   /**
-   * 从物理体同步变换
+   * 从物理体同步变换（自动化同步机制）
    */
   private _syncFromPhysics(): void {
-    if (this._physicsBody && this.object3D) {
-      this._physicsServer.syncToThreeObject(this._physicsBody, this.object3D)
+    if (!this._physicsBody || !this._physicsInitialized) {
+      return
+    }
+
+    try {
+      // 获取CANNON物理体的实际位置和旋转
+      const cannonBody = this._physicsBody
+      if (!cannonBody || !cannonBody.position) {
+        return
+      }
+
+      const newPosition = {
+        x: cannonBody.position.x,
+        y: cannonBody.position.y,
+        z: cannonBody.position.z
+      }
+
+      const newQuaternion = {
+        x: cannonBody.quaternion.x,
+        y: cannonBody.quaternion.y,
+        z: cannonBody.quaternion.z,
+        w: cannonBody.quaternion.w
+      }
+
+      // 1. 同步到父对象（通常是MeshInstance3D）
+      if (this.parent && this.parent.object3D) {
+        // 更新Three.js对象位置
+        this.parent.object3D.position.set(newPosition.x, newPosition.y, newPosition.z)
+        this.parent.object3D.quaternion.set(newQuaternion.x, newQuaternion.y, newQuaternion.z, newQuaternion.w)
+
+        // 更新父对象的QAQ位置属性
+        this.parent.position = { ...newPosition }
+
+        // 如果父对象有rotation属性，也更新它（简化版四元数到欧拉角转换）
+        if ('rotation' in this.parent) {
+          // 简化的四元数到欧拉角转换（主要处理Y轴旋转）
+          const { x, y, z, w } = newQuaternion
+          const yRotation = Math.atan2(2 * (w * y + x * z), 1 - 2 * (y * y + z * z))
+          this.parent.rotation = {
+            x: 0, // 简化处理
+            y: yRotation,
+            z: 0  // 简化处理
+          }
+        }
+      }
+
+      // 2. 备用：同步到自己的object3D
+      if (this.object3D) {
+        this.object3D.position.set(newPosition.x, newPosition.y, newPosition.z)
+        this.object3D.quaternion.set(newQuaternion.x, newQuaternion.y, newQuaternion.z, newQuaternion.w)
+      }
+
+      // 3. 更新自己的位置属性
+      this.position = { ...newPosition }
+
+    } catch (error) {
+      console.warn(`Physics sync error for ${this.name}:`, error)
     }
   }
 
