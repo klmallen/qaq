@@ -74,6 +74,10 @@ export class MeshInstance3D extends Node3D {
   private _roughness: number = 0.5
   private _metalness: number = 0.0
 
+  // 🌟 智能推断：记录网格创建信息
+  private _meshType: 'BOX' | 'SPHERE' | 'PLANE' | 'CUSTOM' = 'CUSTOM'
+  private _meshParameters: any = null
+
   get mesh(): THREE.Mesh | null {
     return this._mesh
   }
@@ -454,6 +458,10 @@ export class MeshInstance3D extends Node3D {
 
     this.geometry = geometry
     this.materials = [material]
+
+    // 🌟 记录网格创建信息用于智能推断
+    this._meshType = 'BOX'
+    this._meshParameters = { size }
   }
 
   createSphereMesh(radius: number = 0.5, segments: number = 32): void {
@@ -466,6 +474,10 @@ export class MeshInstance3D extends Node3D {
 
     this.geometry = geometry
     this.materials = [material]
+
+    // 🌟 记录网格创建信息用于智能推断
+    this._meshType = 'SPHERE'
+    this._meshParameters = { radius, segments }
   }
 
   createPlaneMesh(size: { x: number, y: number } = { x: 1, y: 1 }): void {
@@ -479,6 +491,20 @@ export class MeshInstance3D extends Node3D {
 
     this.geometry = geometry
     this.materials = [material]
+
+    // 🌟 记录网格创建信息用于智能推断
+    this._meshType = 'PLANE'
+    this._meshParameters = { size }
+  }
+
+  /**
+   * 🌟 获取网格类型信息用于智能碰撞推断
+   */
+  getMeshInfo(): { type: 'BOX' | 'SPHERE' | 'PLANE' | 'CUSTOM', parameters: any } {
+    return {
+      type: this._meshType,
+      parameters: this._meshParameters
+    }
   }
 
   createCylinderMesh(

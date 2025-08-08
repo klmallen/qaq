@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粒子系统修复测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 300px;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #555;
+        }
+        .test-section {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+        .test-title {
+            color: #4CAF50;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        input[type="range"] {
+            width: 150px;
+            margin: 5px;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>🧪 粒子系统修复测试</h3>
+        <p>测试生命周期大小变化和运动轨迹修复</p>
+        <div id="status">初始化中...</div>
+        <div id="debug-info"></div>
+    </div>
+    
+    <div id="controls">
+        <div class="test-section">
+            <div class="test-title">📏 大小控制测试</div>
+            <label>
+                <input type="checkbox" id="sizeOverLifetime"> 生命周期大小变化
+            </label>
+            <label>
+                起始大小: <span id="startSizeValue">0.2</span>
+                <input type="range" id="startSize" min="0.05" max="0.5" step="0.05" value="0.2">
+            </label>
+            <label>
+                结束大小: <span id="endSizeValue">0.05</span>
+                <input type="range" id="endSize" min="0.01" max="0.3" step="0.01" value="0.05">
+            </label>
+            <label>
+                大小随机性: <span id="sizeRandomnessValue">0.3</span>
+                <input type="range" id="sizeRandomness" min="0" max="1" step="0.1" value="0.3">
+            </label>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🌪️ 运动模式测试</div>
+            <label>
+                运动模式:
+                <select id="movementMode">
+                    <option value="gravity">⬇️ 重力</option>
+                    <option value="explosion">💥 爆炸</option>
+                    <option value="implosion">🌀 内爆</option>
+                    <option value="tornado">🌪️ 龙卷风</option>
+                    <option value="orbital">🪐 轨道</option>
+                    <option value="wave">🌊 波浪</option>
+                </select>
+            </label>
+            <label>
+                效果强度: <span id="strengthValue">2.0</span>
+                <input type="range" id="strength" min="0.1" max="10" step="0.1" value="2.0">
+            </label>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">⚡ 快速测试</div>
+            <button onclick="testSizeAnimation()">测试大小动画</button>
+            <button onclick="testExplosion()">测试爆炸</button>
+            <button onclick="testTornado()">测试龙卷风</button>
+            <button onclick="testOrbital()">测试轨道</button>
+            <button onclick="resetParticles()">重置粒子</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js'
+        
+        // 模拟粒子系统
+        class TestParticleSystem {
+            constructor() {
+                this.scene = new THREE.Scene()
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+                this.renderer = new THREE.WebGLRenderer()
+                this.particles = []
+                this.particleSystem = null
+                
+                // 粒子参数
+                this.sizeOverLifetime = false
+                this.startSize = 0.2
+                this.endSize = 0.05
+                this.sizeRandomness = 0.3
+                this.movementMode = 'gravity'
+                this.attractionStrength = 2.0
+                this.attractionPoint = new THREE.Vector3(0, 0, 0)
+                
+                this.init()
+            }
+            
+            init() {
+                // 设置渲染器
+                this.renderer.setSize(window.innerWidth, window.innerHeight)
+                this.renderer.setClearColor(0x000011)
+                document.body.appendChild(this.renderer.domElement)
+                
+                // 设置相机
+                this.camera.position.set(0, 2, 8)
+                this.camera.lookAt(0, 0, 0)
+                
+                // 创建粒子系统
+                this.createParticles()
+                
+                // 开始渲染循环
+                this.startRenderLoop()
+                
+                document.getElementById('status').textContent = '✅ 初始化完成'
+            }
+            
+            createParticles() {
+                const geometry = new THREE.BufferGeometry()
+                const material = new THREE.PointsMaterial({
+                    size: 0.1,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    sizeAttenuation: true
+                })
+                
+                const particleCount = 100
+                const positions = new Float32Array(particleCount * 3)
+                const colors = new Float32Array(particleCount * 3)
+                const sizes = new Float32Array(particleCount)
+                
+                // 初始化粒子
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        position: new THREE.Vector3(
+                            (Math.random() - 0.5) * 2,
+                            Math.random() * 2,
+                            (Math.random() - 0.5) * 2
+                        ),
+                        velocity: new THREE.Vector3(
+                            (Math.random() - 0.5) * 0.02,
+                            Math.random() * 0.05 + 0.01,
+                            (Math.random() - 0.5) * 0.02
+                        ),
+                        age: Math.random() * 3,
+                        lifetime: 3 + Math.random() * 2,
+                        size: 0.1 + Math.random() * 0.1,
+                        randomSeed: Math.random(),
+                        alive: true
+                    })
+                    
+                    positions[i * 3] = this.particles[i].position.x
+                    positions[i * 3 + 1] = this.particles[i].position.y
+                    positions[i * 3 + 2] = this.particles[i].position.z
+                    
+                    colors[i * 3] = 1.0
+                    colors[i * 3 + 1] = 0.5 + Math.random() * 0.5
+                    colors[i * 3 + 2] = Math.random() * 0.3
+                    
+                    sizes[i] = this.particles[i].size
+                }
+                
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+                geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+                
+                this.particleSystem = new THREE.Points(geometry, material)
+                this.scene.add(this.particleSystem)
+            }
+            
+            updateParticles(deltaTime) {
+                const positions = this.particleSystem.geometry.attributes.position.array
+                const colors = this.particleSystem.geometry.attributes.color.array
+                const sizes = this.particleSystem.geometry.attributes.size.array
+                
+                for (let i = 0; i < this.particles.length; i++) {
+                    const particle = this.particles[i]
+                    
+                    // 更新年龄
+                    particle.age += deltaTime
+                    
+                    // 检查生命周期
+                    if (particle.age >= particle.lifetime) {
+                        // 重生粒子
+                        particle.age = 0
+                        particle.position.set(
+                            (Math.random() - 0.5) * 2,
+                            0,
+                            (Math.random() - 0.5) * 2
+                        )
+                        particle.velocity.set(
+                            (Math.random() - 0.5) * 0.02,
+                            Math.random() * 0.05 + 0.01,
+                            (Math.random() - 0.5) * 0.02
+                        )
+                    } else {
+                        // 更新位置
+                        particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime * 60))
+                        
+                        // 应用运动模式
+                        this.applyMovement(particle, deltaTime)
+                    }
+                    
+                    // 更新几何体
+                    positions[i * 3] = particle.position.x
+                    positions[i * 3 + 1] = particle.position.y
+                    positions[i * 3 + 2] = particle.position.z
+                    
+                    // 计算大小
+                    const ageRatio = particle.age / particle.lifetime
+                    let size = particle.size
+                    
+                    if (this.sizeOverLifetime) {
+                        size = this.startSize + (this.endSize - this.startSize) * ageRatio
+                    }
+                    
+                    if (this.sizeRandomness > 0) {
+                        const randomFactor = 1 + (particle.randomSeed - 0.5) * this.sizeRandomness
+                        size *= randomFactor
+                    }
+                    
+                    sizes[i] = size
+                    
+                    // 更新颜色（淡出效果）
+                    const alpha = 1.0 - ageRatio
+                    colors[i * 3] = 1.0 * alpha
+                    colors[i * 3 + 1] = (0.5 + Math.random() * 0.5) * alpha
+                    colors[i * 3 + 2] = (Math.random() * 0.3) * alpha
+                }
+                
+                // 标记需要更新
+                this.particleSystem.geometry.attributes.position.needsUpdate = true
+                this.particleSystem.geometry.attributes.color.needsUpdate = true
+                this.particleSystem.geometry.attributes.size.needsUpdate = true
+            }
+            
+            applyMovement(particle, deltaTime) {
+                switch (this.movementMode) {
+                    case 'explosion':
+                        const explosionDir = particle.position.clone().sub(this.attractionPoint)
+                        if (explosionDir.length() > 0.01) {
+                            explosionDir.normalize()
+                            particle.velocity.add(explosionDir.multiplyScalar(this.attractionStrength * deltaTime * 2))
+                        }
+                        break
+                        
+                    case 'implosion':
+                        const implosionDir = this.attractionPoint.clone().sub(particle.position)
+                        if (implosionDir.length() > 0.01) {
+                            implosionDir.normalize()
+                            particle.velocity.add(implosionDir.multiplyScalar(this.attractionStrength * deltaTime))
+                        }
+                        break
+                        
+                    case 'tornado':
+                        const toCenter = this.attractionPoint.clone().sub(particle.position)
+                        const radialDir = toCenter.clone()
+                        radialDir.y = 0
+                        if (radialDir.length() > 0.01) {
+                            radialDir.normalize()
+                            particle.velocity.add(radialDir.multiplyScalar(this.attractionStrength * deltaTime))
+                            
+                            const tangential = new THREE.Vector3()
+                            tangential.crossVectors(new THREE.Vector3(0, 1, 0), radialDir)
+                            particle.velocity.add(tangential.multiplyScalar(deltaTime * 3))
+                            
+                            particle.velocity.y += deltaTime * 2
+                        }
+                        break
+                        
+                    case 'orbital':
+                        const orbitDir = this.attractionPoint.clone().sub(particle.position)
+                        const orbitDist = orbitDir.length()
+                        if (orbitDist > 0.1) {
+                            const centripetal = orbitDir.clone().normalize().multiplyScalar(this.attractionStrength / (orbitDist * orbitDist) * deltaTime * 20)
+                            const tangential = new THREE.Vector3()
+                            tangential.crossVectors(new THREE.Vector3(0, 1, 0), orbitDir.normalize())
+                            tangential.multiplyScalar(deltaTime * 2)
+                            
+                            particle.velocity.add(centripetal).add(tangential)
+                        }
+                        break
+                        
+                    default: // gravity
+                        particle.velocity.y -= 0.002
+                        break
+                }
+            }
+            
+            startRenderLoop() {
+                let lastTime = performance.now()
+                
+                const animate = () => {
+                    const currentTime = performance.now()
+                    const deltaTime = (currentTime - lastTime) / 1000
+                    lastTime = currentTime
+                    
+                    this.updateParticles(deltaTime)
+                    this.renderer.render(this.scene, this.camera)
+                    
+                    requestAnimationFrame(animate)
+                }
+                
+                animate()
+            }
+        }
+        
+        // 全局测试系统
+        let testSystem = null
+        
+        // 初始化
+        window.addEventListener('load', () => {
+            testSystem = new TestParticleSystem()
+            
+            // 绑定控件事件
+            document.getElementById('sizeOverLifetime').addEventListener('change', updateSizeControl)
+            document.getElementById('startSize').addEventListener('input', updateSizeControl)
+            document.getElementById('endSize').addEventListener('input', updateSizeControl)
+            document.getElementById('sizeRandomness').addEventListener('input', updateSizeControl)
+            document.getElementById('movementMode').addEventListener('change', updateMovementMode)
+            document.getElementById('strength').addEventListener('input', updateMovementMode)
+        })
+        
+        function updateSizeControl() {
+            if (!testSystem) return
+            
+            testSystem.sizeOverLifetime = document.getElementById('sizeOverLifetime').checked
+            testSystem.startSize = parseFloat(document.getElementById('startSize').value)
+            testSystem.endSize = parseFloat(document.getElementById('endSize').value)
+            testSystem.sizeRandomness = parseFloat(document.getElementById('sizeRandomness').value)
+            
+            document.getElementById('startSizeValue').textContent = testSystem.startSize
+            document.getElementById('endSizeValue').textContent = testSystem.endSize
+            document.getElementById('sizeRandomnessValue').textContent = testSystem.sizeRandomness
+            
+            console.log('📏 大小控制更新:', {
+                sizeOverLifetime: testSystem.sizeOverLifetime,
+                startSize: testSystem.startSize,
+                endSize: testSystem.endSize,
+                sizeRandomness: testSystem.sizeRandomness
+            })
+        }
+        
+        function updateMovementMode() {
+            if (!testSystem) return
+            
+            testSystem.movementMode = document.getElementById('movementMode').value
+            testSystem.attractionStrength = parseFloat(document.getElementById('strength').value)
+            
+            document.getElementById('strengthValue').textContent = testSystem.attractionStrength
+            
+            console.log('🌪️ 运动模式更新:', {
+                mode: testSystem.movementMode,
+                strength: testSystem.attractionStrength
+            })
+        }
+        
+        // 测试函数
+        window.testSizeAnimation = () => {
+            if (!testSystem) return
+            testSystem.sizeOverLifetime = true
+            testSystem.startSize = 0.3
+            testSystem.endSize = 0.05
+            document.getElementById('sizeOverLifetime').checked = true
+            document.getElementById('startSize').value = 0.3
+            document.getElementById('endSize').value = 0.05
+            updateSizeControl()
+            console.log('🧪 测试大小动画')
+        }
+        
+        window.testExplosion = () => {
+            if (!testSystem) return
+            testSystem.movementMode = 'explosion'
+            testSystem.attractionStrength = 5.0
+            document.getElementById('movementMode').value = 'explosion'
+            document.getElementById('strength').value = 5.0
+            updateMovementMode()
+            console.log('💥 测试爆炸效果')
+        }
+        
+        window.testTornado = () => {
+            if (!testSystem) return
+            testSystem.movementMode = 'tornado'
+            testSystem.attractionStrength = 3.0
+            document.getElementById('movementMode').value = 'tornado'
+            document.getElementById('strength').value = 3.0
+            updateMovementMode()
+            console.log('🌪️ 测试龙卷风效果')
+        }
+        
+        window.testOrbital = () => {
+            if (!testSystem) return
+            testSystem.movementMode = 'orbital'
+            testSystem.attractionStrength = 2.0
+            document.getElementById('movementMode').value = 'orbital'
+            document.getElementById('strength').value = 2.0
+            updateMovementMode()
+            console.log('🪐 测试轨道效果')
+        }
+        
+        window.resetParticles = () => {
+            if (!testSystem) return
+            testSystem.particles.forEach(particle => {
+                particle.age = 0
+                particle.position.set(
+                    (Math.random() - 0.5) * 2,
+                    0,
+                    (Math.random() - 0.5) * 2
+                )
+            })
+            console.log('🔄 粒子已重置')
+        }
+    </script>
+</body>
+</html>

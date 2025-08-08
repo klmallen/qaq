@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { Node, Node3D, MeshInstance3D, SceneTree } from '~/core'
+import { ref, computed, readonly } from 'vue'
+import { Node, Node3D, MeshInstance3D, SceneTree, Scene } from '~/core'
+import { EditorEngineBridge } from '~/core/editor/EditorEngineBridge'
+import type { EditorNodeInfo } from '~/core/editor/EditorEngineBridge'
 
 export interface EditorTab {
   id: string
@@ -17,8 +19,11 @@ export interface EditorState {
   activeTabId: string | null
   sceneTree: SceneTree | null
   selectedNode: Node | null
+  selectedNodeIds: string[]
   projectName: string | null
   projectPath: string | null
+  engineBridge: EditorEngineBridge | null
+  sceneNodes: EditorNodeInfo[]
 }
 
 export const useEditorStore = defineStore('editor', () => {
@@ -29,13 +34,16 @@ export const useEditorStore = defineStore('editor', () => {
     activeTabId: null,
     sceneTree: null,
     selectedNode: null,
+    selectedNodeIds: [],
     projectName: null,
-    projectPath: null
+    projectPath: null,
+    engineBridge: null,
+    sceneNodes: []
   })
 
   // 计算属性
   const currentScene = computed(() => {
-    return state.value.sceneTree?.root || null
+    return state.value.engineBridge?.getCurrentScene() || null
   })
 
   const activeTab = computed(() => {
@@ -47,9 +55,79 @@ export const useEditorStore = defineStore('editor', () => {
     return state.value.selectedNode
   })
 
+  const selectedNodes = computed(() => {
+    return state.value.sceneNodes.filter(node =>
+      state.value.selectedNodeIds.includes(node.id)
+    )
+  })
+
+  const hasOpenTabs = computed(() => state.value.openTabs.length > 0)
+
   // 方法
   function setInitialized(initialized: boolean) {
     state.value.isInitialized = initialized
+  }
+
+  /**
+   * 初始化编辑器引擎桥接器
+   */
+  async function initializeEngineBridge(container: HTMLElement): Promise<void> {
+    if (state.value.engineBridge) {
+      console.warn('⚠️ 引擎桥接器已经初始化')
+      return
+    }
+
+    try {
+      const bridge = new EditorEngineBridge()
+
+      // 设置事件回调
+      bridge.setEventCallbacks({
+        onSelectionChanged: (nodeIds: string[]) => {
+          state.value.selectedNodeIds = nodeIds
+          console.log('🎯 选择变更:', nodeIds)
+        },
+        onSceneChanged: (scene: Scene | null) => {
+          if (scene) {
+            state.value.sceneTree = bridge.getSceneTree()
+            updateSceneNodes()
+          }
+          console.log('🌳 场景变更:', scene?.name)
+        },
+        onNodeAdded: (node: Node, parent: Node) => {
+          updateSceneNodes()
+          console.log('➕ 节点添加:', node.name, '到', parent.name)
+        },
+        onNodeRemoved: (node: Node, parent: Node) => {
+          updateSceneNodes()
+          console.log('➖ 节点移除:', node.name, '从', parent.name)
+        }
+      })
+
+      // 初始化桥接器
+      await bridge.initialize({
+        container,
+        width: container.clientWidth,
+        height: container.clientHeight,
+        enableGrid: true,
+        enableGizmos: true
+      })
+
+      state.value.engineBridge = bridge
+      console.log('✅ 编辑器引擎桥接器初始化完成')
+
+    } catch (error) {
+      console.error('❌ 编辑器引擎桥接器初始化失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 更新场景节点列表
+   */
+  function updateSceneNodes(): void {
+    if (state.value.engineBridge) {
+      state.value.sceneNodes = state.value.engineBridge.getSceneNodes()
+    }
   }
 
   function setSceneTree(sceneTree: SceneTree | null) {
@@ -110,11 +188,13 @@ export const useEditorStore = defineStore('editor', () => {
   async function createNewScene(config: { name: string; type: '3d' | '2d' | 'ui' }) {
     console.log('🏗️ Creating new scene:', config)
 
+    if (!state.value.engineBridge) {
+      throw new Error('引擎桥接器未初始化')
+    }
+
     try {
-      // 创建新的场景树
-      const sceneTree = new SceneTree()
-      sceneTree.setMeta('sceneName', config.name)
-      sceneTree.setMeta('sceneType', config.type)
+      // 使用引擎桥接器创建新场景
+      const scene = await state.value.engineBridge.createNewScene(config.name)
 
       // 创建根节点
       let rootNode: Node
@@ -140,18 +220,18 @@ export const useEditorStore = defineStore('editor', () => {
         // 添加立方体
         const cubeNode = new MeshInstance3D('Cube')
         cubeNode.createBoxMesh()
-        cubeNode.transform.position.set(0, 0, 0)
+        cubeNode.position = { x: 0, y: 0, z: 0 }
         geometryFolder.addChild(cubeNode)
 
         // 添加球体
         const sphereNode = new MeshInstance3D('Sphere')
-        sphereNode.transform.position.set(2, 0, 0)
+        sphereNode.position = { x: 2, y: 0, z: 0 }
         geometryFolder.addChild(sphereNode)
 
         // 添加平面
         const planeNode = new MeshInstance3D('Plane')
-        planeNode.transform.position.set(-2, 0, 0)
-        planeNode.transform.scale.set(5, 1, 5)
+        planeNode.position = { x: -2, y: 0, z: 0 }
+        planeNode.scale = { x: 5, y: 1, z: 5 }
         geometryFolder.addChild(planeNode)
 
         // 3. 相机和控制
@@ -159,7 +239,7 @@ export const useEditorStore = defineStore('editor', () => {
         rootNode.addChild(cameraFolder)
 
         const mainCamera = new Node3D('MainCamera3D')
-        mainCamera.transform.position.set(5, 5, 5)
+        mainCamera.position = { x: 5, y: 5, z: 5 }
         cameraFolder.addChild(mainCamera)
 
         // 4. 用户界面
@@ -176,11 +256,8 @@ export const useEditorStore = defineStore('editor', () => {
         rootNode = new Node(config.name)
       }
 
-      // 设置场景树的根节点
-      sceneTree.setRoot(rootNode)
-
-      // 设置当前场景树
-      setSceneTree(sceneTree)
+      // 更新场景节点列表
+      updateSceneNodes()
       state.value.selectedNode = null
 
       // 打开场景标签页
@@ -194,7 +271,6 @@ export const useEditorStore = defineStore('editor', () => {
       })
 
       console.log(`✅ Scene "${config.name}" created successfully`)
-      return sceneTree
 
     } catch (error) {
       console.error('❌ Failed to create scene:', error)
@@ -214,6 +290,8 @@ export const useEditorStore = defineStore('editor', () => {
 
     // 方法
     setInitialized,
+    initializeEngineBridge,
+    updateSceneNodes,
     setSceneTree,
     setSelectedNode,
     clearSelection,
@@ -225,5 +303,4 @@ export const useEditorStore = defineStore('editor', () => {
   }
 })
 
-// 导出类型
-export type { EditorState, EditorTab }
+// 类型已在上面导出，无需重复导出

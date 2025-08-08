@@ -247,6 +247,7 @@ export class StaticBody3D extends Node3D {
     super._process(deltaTime)
 
     if (this._physicsInitialized && this._config.enabled) {
+      // console.log(`${this.name} position:`, this._physicsBody)
       this._syncFromPhysics()
     }
   }
@@ -484,6 +485,274 @@ export class StaticBody3D extends Node3D {
     this._cleanupPhysics()
     this._collisionShapes.clear()
     super.destroy()
+  }
+
+  /**
+   * 智能推断并添加碰撞形状
+   * 从父节点的MeshInstance3D自动推断碰撞形状和位置
+   * 支持基于实际几何体数据的精确碰撞检测
+   */
+  addAutoCollisionShape(options?: {
+    scale?: Vector3
+    useTrimesh?: boolean
+    excludeNames?: string[]
+    simplifyThreshold?: number
+  }): void {
+    const opts = {
+      useTrimesh: false,
+      excludeNames: [],
+      simplifyThreshold: 1000,
+      ...options
+    }
+
+    // 查找父节点中的MeshInstance3D
+    let meshInstance: any = null
+
+    // 检查父节点
+    if (this.parent && this.parent.constructor.name === 'MeshInstance3D') {
+      meshInstance = this.parent
+    }
+
+    if (!meshInstance) {
+      console.warn('无法找到MeshInstance3D父节点，无法自动推断碰撞形状')
+      return
+    }
+
+    // 自动同步世界坐标位置和旋转
+    this._syncWorldTransform(meshInstance)
+
+    // 获取实际的Three.js几何体数据
+    const geometryData = this._extractGeometryData(meshInstance, opts.excludeNames)
+
+    if (!geometryData) {
+      console.warn('无法提取几何体数据，使用默认BOX形状')
+      this.addBoxShape({ x: 1, y: 1, z: 1 })
+      return
+    }
+
+    console.log(`自动推断静态碰撞形状，顶点数: ${geometryData.vertexCount}`)
+
+    // 根据几何体复杂度选择碰撞形状
+    this._createOptimalCollisionShape(geometryData, opts)
+  }
+
+  /**
+   * 同步世界坐标变换
+   */
+  private _syncWorldTransform(meshInstance: any): void {
+    const threeObject = meshInstance.object3D
+
+    // 检查THREE.js是否可用
+    const THREE = (window as any).THREE
+    if (!THREE) {
+      console.warn('THREE.js未加载，使用本地坐标')
+      this.position = { ...meshInstance.position }
+      this.rotation = { ...meshInstance.rotation }
+      return
+    }
+
+    if (threeObject && typeof threeObject.getWorldPosition === 'function') {
+      try {
+        // 获取世界位置
+        const worldPosition = new THREE.Vector3()
+        threeObject.getWorldPosition(worldPosition)
+        this.position = { x: worldPosition.x, y: worldPosition.y, z: worldPosition.z }
+
+        // 获取世界旋转
+        const worldQuaternion = new THREE.Quaternion()
+        threeObject.getWorldQuaternion(worldQuaternion)
+
+        // 转换四元数为欧拉角
+        const euler = new THREE.Euler()
+        euler.setFromQuaternion(worldQuaternion)
+        this.rotation = { x: euler.x, y: euler.y, z: euler.z }
+
+        console.log(`同步世界坐标 - 位置: ${JSON.stringify(this.position)}, 旋转: ${JSON.stringify(this.rotation)}`)
+      } catch (error) {
+        console.warn('获取世界坐标失败，使用本地坐标:', error)
+        this.position = { ...meshInstance.position }
+        this.rotation = { ...meshInstance.rotation }
+      }
+    } else {
+      // 回退到本地坐标
+      this.position = { ...meshInstance.position }
+      this.rotation = { ...meshInstance.rotation }
+      console.log(`使用本地坐标 - 位置: ${JSON.stringify(this.position)}`)
+    }
+  }
+
+  /**
+   * 提取几何体数据
+   */
+  private _extractGeometryData(meshInstance: any, excludeNames: string[]): any {
+    const threeObject = meshInstance.object3D
+    if (!threeObject) {
+      return null
+    }
+
+    let geometryData: any = null
+
+    // 遍历Three.js对象树，提取几何体数据
+    threeObject.traverse((child: any) => {
+      if (child.isMesh && child.geometry) {
+        // 检查是否在排除列表中
+        const shouldExclude = excludeNames.some(name =>
+          child.name.includes(name) || child.name.search(name) !== -1
+        )
+
+        if (shouldExclude) {
+          console.log(`跳过排除的网格: ${child.name}`)
+          return
+        }
+
+        const geometry = child.geometry
+        const positions = geometry.attributes.position?.array
+        const indices = geometry.index?.array
+
+        if (positions) {
+          geometryData = {
+            positions: positions,
+            indices: indices,
+            vertexCount: positions.length / 3,
+            hasIndices: !!indices,
+            name: child.name || 'unnamed',
+            geometry: geometry
+          }
+
+          console.log(`提取几何体数据: ${geometryData.name}, 顶点数: ${geometryData.vertexCount}`)
+        }
+      }
+    })
+
+    return geometryData
+  }
+
+  /**
+   * 根据几何体复杂度创建最优碰撞形状
+   */
+  private _createOptimalCollisionShape(geometryData: any, options: any): void {
+    const { positions, indices, vertexCount, geometry } = geometryData
+    const { scale, useTrimesh, simplifyThreshold } = options
+
+    // 判断是否使用Trimesh
+    const shouldUseTrimesh = useTrimesh || vertexCount > simplifyThreshold
+
+    if (shouldUseTrimesh && indices) {
+      // 使用Trimesh进行精确碰撞
+      this._createTrimeshShape(positions, indices, scale)
+    } else {
+      // 使用简化的基础形状
+      this._createSimplifiedShape(geometry, scale)
+    }
+  }
+
+  /**
+   * 创建Trimesh碰撞形状
+   */
+  private _createTrimeshShape(positions: Float32Array, indices: Uint16Array | Uint32Array, scale?: Vector3): void {
+    try {
+      const CANNON = (window as any).CANNON
+      if (!CANNON) {
+        console.warn('CANNON物理引擎未加载，无法创建Trimesh')
+        return
+      }
+
+      // 应用缩放
+      let scaledPositions = positions
+      if (scale) {
+        scaledPositions = new Float32Array(positions.length)
+        for (let i = 0; i < positions.length; i += 3) {
+          scaledPositions[i] = positions[i] * scale.x
+          scaledPositions[i + 1] = positions[i + 1] * scale.y
+          scaledPositions[i + 2] = positions[i + 2] * scale.z
+        }
+      }
+
+      // 创建Trimesh
+      const trimesh = new CANNON.Trimesh(scaledPositions, indices)
+
+      // 添加到物理体
+      this.addCustomShape(trimesh)
+
+      console.log(`创建Trimesh碰撞形状，顶点数: ${positions.length / 3}, 索引数: ${indices.length}`)
+    } catch (error) {
+      console.error('创建Trimesh失败:', error)
+      // 回退到简化形状
+      this.addBoxShape({ x: 1, y: 1, z: 1 })
+    }
+  }
+
+  /**
+   * 创建简化的基础碰撞形状
+   */
+  private _createSimplifiedShape(geometry: any, scale?: Vector3): void {
+    // 计算包围盒
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox()
+    }
+
+    const boundingBox = geometry.boundingBox
+    if (!boundingBox) {
+      console.warn('无法计算包围盒，使用默认BOX形状')
+      this.addBoxShape({ x: 1, y: 1, z: 1 })
+      return
+    }
+
+    // 计算尺寸
+    let size = {
+      x: (boundingBox.max.x - boundingBox.min.x) / 2,
+      y: (boundingBox.max.y - boundingBox.min.y) / 2,
+      z: (boundingBox.max.z - boundingBox.min.z) / 2
+    }
+
+    // 应用缩放
+    if (scale) {
+      size = {
+        x: size.x * scale.x,
+        y: size.y * scale.y,
+        z: size.z * scale.z
+      }
+    }
+
+    // 智能形状选择
+    const minDimension = Math.min(size.x, size.y, size.z)
+    const maxDimension = Math.max(size.x, size.y, size.z)
+    const dimensionRatio = minDimension / maxDimension
+
+    if (minDimension < 0.1) {
+      // 平面形状
+      this.addPlaneShape()
+      console.log('创建PLANE碰撞形状')
+    } else if (dimensionRatio > 0.8) {
+      // 球体形状
+      const radius = (size.x + size.y + size.z) / 3
+      this.addSphereShape(radius)
+      console.log(`创建SPHERE碰撞形状，半径: ${radius}`)
+    } else {
+      // 盒子形状
+      this.addBoxShape(size)
+      console.log(`创建BOX碰撞形状，尺寸: ${JSON.stringify(size)}`)
+    }
+  }
+
+  /**
+   * 添加自定义形状（如Trimesh）
+   */
+  private addCustomShape(shape: any): void {
+    if (!this._physicsInitialized) {
+      console.warn('物理系统未初始化，无法添加自定义形状')
+      return
+    }
+
+    try {
+      // 直接添加到CANNON物理体
+      if (this._physicsBody && this._physicsBody.addShape) {
+        this._physicsBody.addShape(shape)
+        console.log('成功添加自定义碰撞形状')
+      }
+    } catch (error) {
+      console.error('添加自定义形状失败:', error)
+    }
   }
 }
 

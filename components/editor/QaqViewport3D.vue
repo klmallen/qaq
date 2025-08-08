@@ -176,6 +176,51 @@ const isResizing = ref(false)
 // 初始化
 // ========================================================================
 
+// 初始化引擎桥接器
+async function initializeEngineBridge() {
+  if (!viewportContainer.value) {
+    throw new Error('视口容器未找到')
+  }
+
+  try {
+    console.log('🔧 初始化编辑器引擎桥接器...')
+    await editorStore.initializeEngineBridge(viewportContainer.value)
+
+    // 获取引擎实例来设置渲染器
+    const engine = editorStore.state.engineBridge?.getEngine()
+    if (engine) {
+      const engineRenderer = engine.getRenderer()
+      const engineCamera = engine.getActiveThreeCamera() as THREE.PerspectiveCamera
+      const engineScene = engine.getScene()
+
+      if (engineRenderer && engineCamera && engineScene) {
+        renderer = engineRenderer
+        camera = engineCamera
+        scene = engineScene
+
+        // 设置轨道控制器
+        orbitControls = new OrbitControls(camera, renderer.domElement)
+        orbitControls.enableDamping = true
+        orbitControls.dampingFactor = 0.05
+
+        // 设置变换控制器
+        transformControls = new TransformControls(camera, renderer.domElement)
+        scene.add(transformControls as any)
+
+        // 禁用轨道控制器当变换控制器激活时
+        transformControls.addEventListener('dragging-changed', (event) => {
+          orbitControls.enabled = !event.value
+        })
+      }
+    }
+
+    console.log('✅ 编辑器引擎桥接器初始化完成')
+  } catch (error) {
+    console.error('❌ 编辑器引擎桥接器初始化失败:', error)
+    throw error
+  }
+}
+
 // 初始化默认场景树
 let isInitializingSceneTree = false
 
@@ -187,8 +232,8 @@ async function initializeDefaultSceneTree() {
   }
 
   // 检查是否已经有场景树
-  if (editorStore.sceneTree) {
-    console.log('✅ Scene tree already exists:', editorStore.sceneTree.root?.name)
+  if (editorStore.state.sceneTree) {
+    console.log('✅ Scene tree already exists:', editorStore.state.sceneTree.currentScene?.name)
     return
   }
 
@@ -197,15 +242,14 @@ async function initializeDefaultSceneTree() {
 
   try {
     // 创建默认场景树
-    const sceneTree = await editorStore.createNewScene({
+    await editorStore.createNewScene({
       name: 'Scene1',
       type: '3d'
     })
 
-    console.log('✅ Default scene tree created:', sceneTree.root?.name)
+    console.log('✅ Default scene tree created')
 
-    // 同步场景树到Three.js
-    syncSceneTreeToThreeJS(sceneTree)
+    // 场景已通过引擎桥接器同步
 
   } catch (error) {
     console.error('❌ Failed to initialize default scene tree:', error)
@@ -216,7 +260,10 @@ async function initializeDefaultSceneTree() {
 
 onMounted(async () => {
   await nextTick()
-  initThreeJS()
+
+  // 初始化引擎桥接器
+  await initializeEngineBridge()
+
   setupEventListeners()
   setupResizeObserver()
   startRenderLoop()
@@ -231,21 +278,23 @@ onUnmounted(() => {
 
 // 监听选中节点变化
 watch(() => editorStore.selectedNode, (newNode, oldNode) => {
-  if (newNode && newNode.threeObject) {
+  if (newNode && (newNode as any).threeObject) {
     // 选中新节点，根据当前工具决定是否显示变换控制器
-    updateTransformControls(newNode.threeObject)
+    updateTransformControls((newNode as any).threeObject)
   } else {
     // 清除选择
-    transformControls.detach()
-    transformControls.visible = false
+    if (transformControls) {
+      transformControls.detach()
+      ;(transformControls as any).visible = false
+    }
   }
 })
 
 // 监听工具变化
 watch(currentTool, (newTool, oldTool) => {
   const selectedNode = editorStore.selectedNode
-  if (selectedNode && selectedNode.threeObject) {
-    updateTransformControls(selectedNode.threeObject)
+  if (selectedNode && (selectedNode as any).threeObject) {
+    updateTransformControls((selectedNode as any).threeObject)
   }
 })
 
@@ -311,10 +360,10 @@ function initThreeJS() {
     }
   })
 
-  scene.add(transformControls)
+  scene.add(transformControls as any)
 
   // 初始状态下隐藏TransformControls
-  transformControls.visible = false
+  ;(transformControls as any).visible = false
 
   // 添加光照
   setupLighting()
@@ -436,26 +485,26 @@ function setTool(tool: string) {
   switch (tool) {
     case 'select':
       // 选择模式下隐藏TransformControls
-      transformControls.visible = false
+      ;(transformControls as any).visible = false
       break
     case 'move':
       transformControls.setMode('translate')
       // 只有在有选中对象时才显示
-      transformControls.visible = !!selectedObject.value
+      ;(transformControls as any).visible = !!selectedObject.value
       break
     case 'rotate':
       transformControls.setMode('rotate')
       // 只有在有选中对象时才显示
-      transformControls.visible = !!selectedObject.value
+      ;(transformControls as any).visible = !!selectedObject.value
       break
     case 'scale':
       transformControls.setMode('scale')
       // 只有在有选中对象时才显示
-      transformControls.visible = !!selectedObject.value
+      ;(transformControls as any).visible = !!selectedObject.value
       break
   }
 
-  console.log(`🔧 Tool changed to: ${tool}, TransformControls mode: ${transformControls.mode}, visible: ${transformControls.visible}`)
+  console.log(`🔧 Tool changed to: ${tool}, TransformControls mode: ${transformControls.mode}, visible: ${(transformControls as any).visible}`)
 }
 
 function toggleGrid() {
@@ -683,7 +732,7 @@ function selectObjectAndSync(threeObject: THREE.Object3D) {
   // 2. 附加TransformControls到选中的对象
   if (transformControls) {
     transformControls.attach(threeObject)
-    transformControls.visible = true
+    ;(transformControls as any).visible = true
     console.log('✅ Transform Controls attached to:', threeObject.name)
   }
 
@@ -713,7 +762,7 @@ function clearSelection() {
   // 分离TransformControls
   if (transformControls) {
     transformControls.detach()
-    transformControls.visible = false
+    ;(transformControls as any).visible = false
     console.log('✅ Transform Controls detached')
   }
 
@@ -818,7 +867,7 @@ function updateTransformControls(object: THREE.Object3D) {
   // 根据当前工具决定是否显示变换控制器
   if (currentTool.value === 'move' || currentTool.value === 'rotate' || currentTool.value === 'scale') {
     transformControls.attach(object)
-    transformControls.visible = true
+    ;(transformControls as any).visible = true
     transformControls.setMode(currentTool.value)
 
     // 设置控制器大小，确保可见性
@@ -828,7 +877,7 @@ function updateTransformControls(object: THREE.Object3D) {
   } else {
     // select工具时隐藏变换控制器，但保持选中状态
     transformControls.detach()
-    transformControls.visible = false
+    ;(transformControls as any).visible = false
     console.log('🔧 Transform controls disabled')
   }
 }

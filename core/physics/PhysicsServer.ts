@@ -385,13 +385,13 @@ export class PhysicsServer {
     body.material = this._materials.get('default')!
 
     // 设置物理体ID以便追踪
-    body.id = id
+    // body.id = id
 
     // 添加到物理世界
     this._world!.addBody(body)
     this._bodies.set(id, body)
 
-    console.log(`Physics body created: ${id} (${PhysicsBodyType[type]})`)
+    console.log(`Physics body created: ${id}  ${body} (${PhysicsBodyType[type]})`)
     return body
   }
 
@@ -600,23 +600,8 @@ export class PhysicsServer {
    * @param deltaTime 时间增量（秒）
    */
   step(deltaTime: number): void {
-    try {
-      this.ensureInitialized()
-
-      const currentTime = Date.now() / 1000
-      if (this._lastTime === 0) {
-        this._lastTime = currentTime
-      }
-
-      const dt = currentTime - this._lastTime
-      this._lastTime = currentTime
-
-      // 使用固定时间步长进行仿真
-      this._world!.step(this._fixedTimeStep, dt, this._maxSubSteps)
-    } catch (error) {
-      console.warn('Physics step error:', error)
-      // 不要重新抛出错误，以免中断渲染循环
-    }
+      // this.ensureInitialized()
+      this._world!.fixedStep()
   }
 
   /**

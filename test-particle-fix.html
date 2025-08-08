@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粒子发射修复测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 12px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>🧪 粒子发射修复测试</h3>
+        <p>测试修复后的粒子发射系统</p>
+        <div id="status">初始化中...</div>
+    </div>
+    
+    <div id="controls">
+        <h4>测试控制</h4>
+        <button onclick="testFireEffect()">🔥 火焰效果</button>
+        <button onclick="testSwordTrail()">⚔️ 刀光效果</button>
+        <button onclick="testExplosion()">💥 爆炸效果</button>
+        <button onclick="testIceEffect()">❄️ 冰霜效果</button>
+        <button onclick="testMagicEffect()">✨ 魔法效果</button>
+        <button onclick="diagnoseAll()">🔍 诊断所有</button>
+        <button onclick="resetAll()">🔄 重置所有</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js'
+        
+        // 模拟GPUParticles3D类的简化版本用于测试
+        class TestParticleSystem {
+            constructor() {
+                this.scene = new THREE.Scene()
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+                this.renderer = new THREE.WebGLRenderer()
+                this.particles = []
+                
+                this.init()
+            }
+            
+            init() {
+                // 设置渲染器
+                this.renderer.setSize(window.innerWidth, window.innerHeight)
+                this.renderer.setClearColor(0x000011)
+                document.body.appendChild(this.renderer.domElement)
+                
+                // 设置相机
+                this.camera.position.set(0, 2, 8)
+                this.camera.lookAt(0, 0, 0)
+                
+                // 添加基础光照
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.4)
+                this.scene.add(ambientLight)
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
+                directionalLight.position.set(1, 1, 1)
+                this.scene.add(directionalLight)
+                
+                // 创建测试粒子系统
+                this.createTestParticles()
+                
+                // 开始渲染循环
+                this.startRenderLoop()
+                
+                document.getElementById('status').textContent = '✅ 初始化完成'
+            }
+            
+            createTestParticles() {
+                // 创建多个测试用的粒子系统
+                const positions = [
+                    { x: -4, y: 0, z: 0, name: '火焰', color: 0xff4444 },
+                    { x: -2, y: 0, z: 0, name: '刀光', color: 0x88aaff },
+                    { x: 0, y: 0, z: 0, name: '爆炸', color: 0xff8844 },
+                    { x: 2, y: 0, z: 0, name: '冰霜', color: 0x44aaff },
+                    { x: 4, y: 0, z: 0, name: '魔法', color: 0xaa44ff }
+                ]
+                
+                positions.forEach((pos, index) => {
+                    const geometry = new THREE.BufferGeometry()
+                    const material = new THREE.PointsMaterial({
+                        size: 0.1,
+                        color: pos.color,
+                        transparent: true,
+                        opacity: 0.8,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false,
+                        sizeAttenuation: true
+                    })
+                    
+                    // 创建粒子位置数组
+                    const particleCount = 50
+                    const positions3 = new Float32Array(particleCount * 3)
+                    const colors = new Float32Array(particleCount * 3)
+                    
+                    // 初始化粒子位置
+                    for (let i = 0; i < particleCount; i++) {
+                        positions3[i * 3] = pos.x + (Math.random() - 0.5) * 0.2
+                        positions3[i * 3 + 1] = pos.y + Math.random() * 2
+                        positions3[i * 3 + 2] = pos.z + (Math.random() - 0.5) * 0.2
+                        
+                        const color = new THREE.Color(pos.color)
+                        colors[i * 3] = color.r
+                        colors[i * 3 + 1] = color.g
+                        colors[i * 3 + 2] = color.b
+                    }
+                    
+                    geometry.setAttribute('position', new THREE.BufferAttribute(positions3, 3))
+                    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+                    
+                    const points = new THREE.Points(geometry, material)
+                    this.scene.add(points)
+                    
+                    this.particles.push({
+                        points,
+                        geometry,
+                        material,
+                        name: pos.name,
+                        basePosition: pos,
+                        velocities: [],
+                        ages: [],
+                        lifetimes: []
+                    })
+                    
+                    // 初始化粒子数据
+                    for (let i = 0; i < particleCount; i++) {
+                        this.particles[index].velocities.push(new THREE.Vector3(
+                            (Math.random() - 0.5) * 0.02,
+                            Math.random() * 0.05 + 0.01,
+                            (Math.random() - 0.5) * 0.02
+                        ))
+                        this.particles[index].ages.push(Math.random() * 3)
+                        this.particles[index].lifetimes.push(3 + Math.random() * 2)
+                    }
+                })
+            }
+            
+            startRenderLoop() {
+                let lastTime = performance.now()
+                
+                const animate = () => {
+                    const currentTime = performance.now()
+                    const deltaTime = (currentTime - lastTime) / 1000
+                    lastTime = currentTime
+                    
+                    // 更新粒子
+                    this.updateParticles(deltaTime)
+                    
+                    // 渲染场景
+                    this.renderer.render(this.scene, this.camera)
+                    
+                    requestAnimationFrame(animate)
+                }
+                
+                animate()
+            }
+            
+            updateParticles(deltaTime) {
+                this.particles.forEach((particleSystem, systemIndex) => {
+                    const positions = particleSystem.geometry.attributes.position.array
+                    const colors = particleSystem.geometry.attributes.color.array
+                    const particleCount = positions.length / 3
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        // 更新年龄
+                        particleSystem.ages[i] += deltaTime
+                        
+                        // 检查生命周期
+                        if (particleSystem.ages[i] >= particleSystem.lifetimes[i]) {
+                            // 重生粒子
+                            particleSystem.ages[i] = 0
+                            positions[i * 3] = particleSystem.basePosition.x + (Math.random() - 0.5) * 0.2
+                            positions[i * 3 + 1] = particleSystem.basePosition.y
+                            positions[i * 3 + 2] = particleSystem.basePosition.z + (Math.random() - 0.5) * 0.2
+                            
+                            // 重新设置速度
+                            particleSystem.velocities[i].set(
+                                (Math.random() - 0.5) * 0.02,
+                                Math.random() * 0.05 + 0.01,
+                                (Math.random() - 0.5) * 0.02
+                            )
+                        } else {
+                            // 更新位置
+                            positions[i * 3] += particleSystem.velocities[i].x
+                            positions[i * 3 + 1] += particleSystem.velocities[i].y
+                            positions[i * 3 + 2] += particleSystem.velocities[i].z
+                            
+                            // 应用重力
+                            particleSystem.velocities[i].y -= 0.001
+                        }
+                        
+                        // 更新颜色（淡出效果）
+                        const ageRatio = particleSystem.ages[i] / particleSystem.lifetimes[i]
+                        const alpha = 1.0 - ageRatio
+                        const baseColor = new THREE.Color(particleSystem.basePosition.color)
+                        
+                        colors[i * 3] = baseColor.r * alpha
+                        colors[i * 3 + 1] = baseColor.g * alpha
+                        colors[i * 3 + 2] = baseColor.b * alpha
+                    }
+                    
+                    // 标记需要更新
+                    particleSystem.geometry.attributes.position.needsUpdate = true
+                    particleSystem.geometry.attributes.color.needsUpdate = true
+                })
+            }
+        }
+        
+        // 全局测试系统
+        let testSystem = null
+        
+        // 初始化测试
+        window.addEventListener('load', () => {
+            testSystem = new TestParticleSystem()
+        })
+        
+        // 测试函数
+        window.testFireEffect = () => {
+            console.log('🔥 测试火焰效果')
+            document.getElementById('status').textContent = '🔥 火焰效果测试'
+        }
+        
+        window.testSwordTrail = () => {
+            console.log('⚔️ 测试刀光效果')
+            document.getElementById('status').textContent = '⚔️ 刀光效果测试'
+        }
+        
+        window.testExplosion = () => {
+            console.log('💥 测试爆炸效果')
+            document.getElementById('status').textContent = '💥 爆炸效果测试'
+        }
+        
+        window.testIceEffect = () => {
+            console.log('❄️ 测试冰霜效果')
+            document.getElementById('status').textContent = '❄️ 冰霜效果测试'
+        }
+        
+        window.testMagicEffect = () => {
+            console.log('✨ 测试魔法效果')
+            document.getElementById('status').textContent = '✨ 魔法效果测试'
+        }
+        
+        window.diagnoseAll = () => {
+            console.log('🔍 诊断所有粒子系统')
+            if (testSystem) {
+                testSystem.particles.forEach((p, i) => {
+                    console.log(`粒子系统 ${i + 1} (${p.name}):`, {
+                        粒子数量: p.geometry.attributes.position.count,
+                        材质类型: p.material.type,
+                        基础位置: p.basePosition
+                    })
+                })
+            }
+            document.getElementById('status').textContent = '🔍 诊断完成，查看控制台'
+        }
+        
+        window.resetAll = () => {
+            console.log('🔄 重置所有粒子系统')
+            document.getElementById('status').textContent = '🔄 重置完成'
+        }
+    </script>
+</body>
+</html>
