@@ -64,16 +64,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, watch, onMounted, onUnmounted } from 'vue'
 import { useEditorStore } from '~/stores/editor'
-import { Node, Node2D, Node3D, MeshInstance3D, getFileTypeIcon } from '~/core'
+import { Node, Node2D, Node3D, MeshInstance3D } from '~/core'
 import PropertyRenderer from './inspector/PropertyRenderer.vue'
+import { getEditorEventBus } from '~/core/editor/EditorEventBus'
 
 // 状态管理
 const editorStore = useEditorStore()
+const eventBus = getEditorEventBus()
 
-// 响应式数据
-const searchQuery = ref('')
+// 响应式数据（保留以备将来使用）
+// const searchQuery = ref('')
+
+// 事件监听器清理函数
+let eventCleanupFunctions: (() => void)[] = []
 
 // 计算属性
 const selectedNode = computed(() => editorStore.selectedNode)
@@ -288,6 +293,12 @@ function getNodeIcon(node: Node): string {
 function handlePropertyChanged(propertyName: string, newValue: any) {
   if (!selectedNode.value) return
 
+  const bridge = editorStore.state.engineBridge
+  if (!bridge) {
+    console.error('❌ 引擎桥接器未初始化')
+    return
+  }
+
   try {
     // 直接设置属性值
     if (propertyName.includes('.')) {
@@ -305,26 +316,21 @@ function handlePropertyChanged(propertyName: string, newValue: any) {
     // 发射属性变化信号
     selectedNode.value.emit('property_changed', propertyName, newValue)
 
-    // 标记场景为已修改
-    editorStore.markSceneModified()
+    // 更新场景节点列表
+    editorStore.updateSceneNodes()
 
   } catch (error) {
     console.error('Failed to set property:', propertyName, newValue, error)
 
     // 显示错误提示
-    const toast = useToast()
-    toast.add({
-      title: 'Property Update Failed',
-      description: `Failed to update ${propertyName}`,
-      color: 'red'
-    })
+    console.error(`❌ 属性更新失败: ${propertyName} = ${newValue}`)
   }
 }
 
 function refreshInspector() {
   // 强制重新计算属性
   if (selectedNode.value) {
-    editorStore.setSelectedNode(selectedNode.value)
+    editorStore.setSelectedNode(selectedNode.value as any)
   }
 }
 

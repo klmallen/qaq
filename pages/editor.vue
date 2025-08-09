@@ -1,7 +1,7 @@
 <template>
   <div class="qaq-editor">
     <!-- 全局鼠标跟随器 -->
-    <QaqMouseFollower
+    <!-- <QaqMouseFollower
       :enabled="interactiveEffectsEnabled"
       :speed="0.28"
       :size="18"
@@ -10,7 +10,7 @@
       :liquid-deformation="true"
       background-effect="backdrop"
       :perspective-intensity="1200"
-    />
+    /> -->
 
     <!-- 编辑器主界面 -->
     <div class="qaq-editor-layout">
@@ -261,7 +261,6 @@ import { ref, onMounted } from 'vue'
 // 页面元数据
 definePageMeta({
   title: 'QAQ Game Engine Editor',
-  middleware: 'auth', // 需要认证才能访问
   layout: 'editor'
 })
 
@@ -271,8 +270,7 @@ useSeoMeta({
   description: 'Professional game development environment with advanced tools and features'
 })
 
-// 认证状态管理
-const authStore = useAuthStore()
+// 移除认证状态管理，允许直接访问编辑器
 
 // 导入编辑器组件
 import QaqMenuBar from '~/components/editor/QaqMenuBar.vue'
@@ -659,15 +657,10 @@ function validatePanelStates() {
 
 // 生命周期
 onMounted(async () => {
-  console.log('QAQ Editor mounted')
+  console.log('🚀 QAQ Editor mounted - 直接进入编辑器模式')
 
-  // 检查认证状态
-  await authStore.checkAuth()
-
-  if (!authStore.isAuthenticated) {
-    console.log('用户未认证，重定向到登录页面')
-    await navigateTo('/auth/login')
-  }
+  // 编辑器初始化逻辑可以在这里添加
+  // 例如：加载默认项目、初始化编辑器状态等
 })
 </script>
 

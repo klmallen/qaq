@@ -108,6 +108,15 @@
           <div class="qaq-camera-info">
             <span>Camera: {{ cameraPosition.x.toFixed(2) }}, {{ cameraPosition.y.toFixed(2) }}, {{ cameraPosition.z.toFixed(2) }}</span>
           </div>
+          <div class="qaq-camera-mode">
+            <button
+              @click="toggleCameraMode"
+              class="qaq-camera-mode-btn"
+              :title="cameraMode === 'firstperson' ? '切换到轨道相机' : '切换到第一人称相机'"
+            >
+              {{ cameraMode === 'firstperson' ? '🎮 FPS' : '🔄 Orbit' }}
+            </button>
+          </div>
         </div>
 
         <!-- Transform Controls will be handled directly in Three.js scene -->
@@ -121,6 +130,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick, onBeforeUnmount } from 'v
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
+import { FirstPersonCameraController } from '~/core/editor/FirstPersonCameraController'
 import { useEditorStore } from '~/stores/editor'
 import { SceneTree, Node3D, MeshInstance3D } from '~/core'
 
@@ -138,7 +148,8 @@ const canvas = ref<HTMLCanvasElement>()
 let scene: THREE.Scene
 let camera: THREE.PerspectiveCamera
 let renderer: THREE.WebGLRenderer
-let orbitControls: OrbitControls
+let orbitControls: OrbitControls | null = null
+let firstPersonController: FirstPersonCameraController | null = null
 let transformControls: TransformControls
 
 // 响应式数据
@@ -152,6 +163,8 @@ const triangleCount = ref(0)
 const drawCalls = ref(0)
 const cameraPosition = ref({ x: 0, y: 0, z: 0 })
 const selectedObject = ref<THREE.Object3D | null>(null) // 当前选中的3D对象
+const cameraMode = ref<'orbit' | 'firstperson'>('firstperson') // 相机控制模式
+const needsRender = ref(true) // 按需渲染标记
 
 // 视图模式选项
 const viewModeItems = [
@@ -176,6 +189,53 @@ const isResizing = ref(false)
 // 初始化
 // ========================================================================
 
+// 初始化相机控制器
+function initializeCameraController() {
+  if (!camera || !viewportContainer.value) return
+
+  // 清理现有控制器
+  if (orbitControls) {
+    orbitControls.dispose()
+    orbitControls = null
+  }
+  if (firstPersonController) {
+    firstPersonController.disconnect()
+    firstPersonController = null
+  }
+
+  if (cameraMode.value === 'firstperson') {
+    // 创建第一人称控制器
+    firstPersonController = new FirstPersonCameraController(camera, viewportContainer.value, {
+      moveSpeed: 5.0,
+      mouseSensitivity: 0.002,
+      speedMultiplier: 3.0,
+      slowMultiplier: 0.3,
+      enableDamping: true,
+      dampingFactor: 0.1
+    })
+
+    console.log('🎮 第一人称相机控制器已激活')
+    console.log('   - WASD: 移动')
+    console.log('   - 鼠标: 旋转视角（点击锁定）')
+    console.log('   - Shift: 加速')
+    console.log('   - Ctrl: 减速')
+    console.log('   - Q/E: 上下移动')
+  } else {
+    // 创建轨道控制器
+    orbitControls = new OrbitControls(camera, renderer.domElement)
+    orbitControls.enableDamping = true
+    orbitControls.dampingFactor = 0.05
+
+    console.log('🔄 轨道相机控制器已激活')
+  }
+}
+
+// 切换相机控制模式
+function toggleCameraMode() {
+  cameraMode.value = cameraMode.value === 'orbit' ? 'firstperson' : 'orbit'
+  initializeCameraController()
+}
+
 // 初始化引擎桥接器
 async function initializeEngineBridge() {
   if (!viewportContainer.value) {
@@ -198,20 +258,42 @@ async function initializeEngineBridge() {
         camera = engineCamera
         scene = engineScene
 
-        // 设置轨道控制器
-        orbitControls = new OrbitControls(camera, renderer.domElement)
-        orbitControls.enableDamping = true
-        orbitControls.dampingFactor = 0.05
+        console.log('🎮 引擎组件已连接:')
+        console.log(`   - 渲染器: ${renderer.constructor.name}`)
+        console.log(`   - 相机: ${camera.constructor.name}`)
+        console.log(`   - 场景: ${scene.constructor.name}`)
+        console.log(`   - 场景子对象数: ${scene.children.length}`)
+
+        // 初始化相机控制器
+        initializeCameraController()
 
         // 设置变换控制器
         transformControls = new TransformControls(camera, renderer.domElement)
         scene.add(transformControls as any)
 
-        // 禁用轨道控制器当变换控制器激活时
+        // 禁用相机控制器当变换控制器激活时
         transformControls.addEventListener('dragging-changed', (event) => {
-          orbitControls.enabled = !event.value
+          if (orbitControls) {
+            orbitControls.enabled = !event.value
+          }
+          if (firstPersonController && event.value) {
+            // 变换控制器激活时暂时禁用第一人称控制器
+            // 这里可以添加禁用逻辑
+          }
         })
+
+        // 确保渲染器大小正确
+        const rect = viewportContainer.value.getBoundingClientRect()
+        renderer.setSize(rect.width, rect.height)
+        camera.aspect = rect.width / rect.height
+        camera.updateProjectionMatrix()
+
+        console.log(`📐 视口尺寸: ${rect.width}x${rect.height}`)
+      } else {
+        console.error('❌ 引擎组件获取失败')
       }
+    } else {
+      console.error('❌ 引擎实例获取失败')
     }
 
     console.log('✅ 编辑器引擎桥接器初始化完成')
@@ -227,35 +309,19 @@ let isInitializingSceneTree = false
 async function initializeDefaultSceneTree() {
   // 防止重复初始化
   if (isInitializingSceneTree) {
-    console.log('⏳ Scene tree initialization already in progress')
     return
   }
 
   // 检查是否已经有场景树
   if (editorStore.state.sceneTree) {
-    console.log('✅ Scene tree already exists:', editorStore.state.sceneTree.currentScene?.name)
     return
   }
 
   isInitializingSceneTree = true
-  console.log('🌳 Initializing default scene tree...')
-
-  try {
-    // 创建默认场景树
     await editorStore.createNewScene({
       name: 'Scene1',
       type: '3d'
     })
-
-    console.log('✅ Default scene tree created')
-
-    // 场景已通过引擎桥接器同步
-
-  } catch (error) {
-    console.error('❌ Failed to initialize default scene tree:', error)
-  } finally {
-    isInitializingSceneTree = false
-  }
 }
 
 onMounted(async () => {
@@ -264,9 +330,8 @@ onMounted(async () => {
   // 初始化引擎桥接器
   await initializeEngineBridge()
 
-  setupEventListeners()
-  setupResizeObserver()
-  startRenderLoop()
+  // setupEventListeners()
+  // setupResizeObserver()
 
   // 初始化默认场景树（如果不存在）
   await initializeDefaultSceneTree()
@@ -276,7 +341,7 @@ onUnmounted(() => {
   cleanup()
 })
 
-// 监听选中节点变化
+// 监听选中节点变化 (重构版 - 事件驱动)
 watch(() => editorStore.selectedNode, (newNode, oldNode) => {
   if (newNode && (newNode as any).threeObject) {
     // 选中新节点，根据当前工具决定是否显示变换控制器
@@ -288,6 +353,9 @@ watch(() => editorStore.selectedNode, (newNode, oldNode) => {
       ;(transformControls as any).visible = false
     }
   }
+
+  // 标记需要渲染
+  needsRender.value = true
 })
 
 // 监听工具变化
@@ -297,6 +365,42 @@ watch(currentTool, (newTool, oldTool) => {
     updateTransformControls((selectedNode as any).threeObject)
   }
 })
+
+// 监听场景变化
+watch(() => editorStore.currentScene, (newScene, oldScene) => {
+  if (newScene && newScene !== oldScene) {
+    console.log('🌳 场景变化检测到:', newScene.name)
+
+    // 更新THREE.js场景引用
+    const engine = editorStore.state.engineBridge?.getEngine()
+    if (engine) {
+      const engineScene = engine.getScene()
+      if (engineScene && engineScene !== scene) {
+        scene = engineScene
+        console.log('🔄 THREE.js场景已更新')
+        console.log(`   - 新场景子对象数: ${scene.children.length}`)
+      }
+    }
+
+    // 重置相机位置到合适的观察角度
+    if (camera && orbitControls) {
+      camera.position.set(5, 5, 5)
+      camera.lookAt(0, 0, 0)
+      orbitControls.update()
+      console.log('📷 相机位置已重置')
+    }
+  }
+})
+
+// 监听场景节点变化 (重构版 - 事件驱动)
+watch(() => editorStore.state.sceneNodes, (newNodes, oldNodes) => {
+  if (newNodes.length !== oldNodes?.length) {
+    console.log(`🔄 场景节点数量变化: ${oldNodes?.length || 0} -> ${newNodes.length}`)
+
+    // 标记需要渲染，而不是立即渲染
+    needsRender.value = true
+  }
+}, { deep: true })
 
 // 监听当前场景变化（统一的场景同步入口）
 // 使用ref来跟踪上次同步的场景，避免重复同步
@@ -315,163 +419,7 @@ watch(() => editorStore.currentScene, (newScene, oldScene) => {
   }
 }, { immediate: true })
 
-function initThreeJS() {
-  if (!canvas.value || !viewportContainer.value) return
 
-  // 创建场景
-  scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x2a2a2a)
-
-  // 创建相机
-  const aspect = viewportContainer.value.clientWidth / viewportContainer.value.clientHeight
-  camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000)
-  camera.position.set(5, 5, 5)
-  camera.lookAt(0, 0, 0)
-
-  // 创建渲染器
-  renderer = new THREE.WebGLRenderer({
-    canvas: canvas.value,
-    antialias: true,
-    alpha: true
-  })
-  renderer.setSize(viewportContainer.value.clientWidth, viewportContainer.value.clientHeight)
-  renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
-
-  // 创建轨道控制器
-  orbitControls = new OrbitControls(camera, canvas.value)
-  orbitControls.enableDamping = true
-  orbitControls.dampingFactor = 0.05
-
-  // 创建变换控制器
-  transformControls = new TransformControls(camera, canvas.value)
-
-  // 监听拖拽状态变化，拖拽时禁用轨道控制器
-  transformControls.addEventListener('dragging-changed', (event) => {
-    orbitControls.enabled = !event.value
-  })
-
-  // 监听变换变化事件
-  transformControls.addEventListener('change', () => {
-    // 当变换发生时，可以在这里更新属性面板等
-    if (selectedObject.value) {
-      console.log('🔧 Transform changed for:', selectedObject.value.name)
-    }
-  })
-
-  scene.add(transformControls as any)
-
-  // 初始状态下隐藏TransformControls
-  ;(transformControls as any).visible = false
-
-  // 添加光照
-  setupLighting()
-
-  // 添加网格
-  if (showGrid.value) {
-    addGrid()
-  }
-
-  // 添加默认场景内容
-  addDefaultSceneContent()
-}
-
-function setupLighting() {
-  // 环境光
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.4)
-  scene.add(ambientLight)
-
-  // 方向光
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
-  directionalLight.position.set(10, 10, 5)
-  directionalLight.castShadow = true
-  directionalLight.shadow.mapSize.width = 2048
-  directionalLight.shadow.mapSize.height = 2048
-  scene.add(directionalLight)
-}
-
-function addGrid() {
-  const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x444444)
-  gridHelper.name = 'EditorGrid'
-  scene.add(gridHelper)
-}
-
-function addDefaultSceneContent() {
-  // 添加一个默认的立方体
-  const geometry = new THREE.BoxGeometry()
-  const material = new THREE.MeshLambertMaterial({ color: 0x00ff00 })
-  const cube = new THREE.Mesh(geometry, material)
-  cube.name = 'DefaultCube'
-  cube.castShadow = true
-  cube.receiveShadow = true
-  scene.add(cube)
-}
-
-// ========================================================================
-// 渲染循环
-// ========================================================================
-
-function startRenderLoop() {
-  let errorCount = 0
-  const maxErrors = 5
-
-  const animate = (currentTime: number) => {
-    try {
-      // 检查必要的对象是否存在
-      if (!renderer || !scene || !camera || !orbitControls) {
-        console.warn('Missing required objects for rendering')
-        animationId = requestAnimationFrame(animate)
-        return
-      }
-
-      // 更新控制器
-      orbitControls.update()
-
-      // 更新相机位置信息
-      cameraPosition.value = {
-        x: Math.round(camera.position.x * 100) / 100,
-        y: Math.round(camera.position.y * 100) / 100,
-        z: Math.round(camera.position.z * 100) / 100
-      }
-
-      // 计算 FPS
-      frameCount++
-      if (currentTime - lastTime >= 1000) {
-        fps.value = Math.round((frameCount * 1000) / (currentTime - lastTime))
-        frameCount = 0
-        lastTime = currentTime
-      }
-
-      // 安全地渲染场景
-      renderer.render(scene, camera)
-
-      // 重置错误计数
-      errorCount = 0
-
-      // 继续动画循环
-      animationId = requestAnimationFrame(animate)
-
-    } catch (error) {
-      errorCount++
-      console.error(`Render loop error (${errorCount}/${maxErrors}):`, error)
-
-      if (errorCount >= maxErrors) {
-        console.error('Too many render errors, stopping animation loop')
-        if (animationId) {
-          cancelAnimationFrame(animationId)
-          animationId = 0
-        }
-        return
-      }
-
-      // 尝试继续渲染
-      animationId = requestAnimationFrame(animate)
-    }
-  }
-
-  animate(0)
-}
 
 // ========================================================================
 // 工具和视图模式
@@ -513,9 +461,7 @@ function toggleGrid() {
   const grid = scene.getObjectByName('EditorGrid')
   if (grid) {
     grid.visible = showGrid.value
-  } else if (showGrid.value) {
-    addGrid()
-  }
+  } 
 }
 
 function toggleWireframe() {
@@ -525,12 +471,12 @@ function toggleWireframe() {
     if (object instanceof THREE.Mesh && object.material) {
       if (Array.isArray(object.material)) {
         object.material.forEach(mat => {
-          if (mat instanceof THREE.Material) {
-            mat.wireframe = showWireframe.value
+          if (mat instanceof THREE.Material && 'wireframe' in mat) {
+            (mat as any).wireframe = showWireframe.value
           }
         })
-      } else if (object.material instanceof THREE.Material) {
-        object.material.wireframe = showWireframe.value
+      } else if (object.material instanceof THREE.Material && 'wireframe' in object.material) {
+        (object.material as any).wireframe = showWireframe.value
       }
     }
   })
@@ -737,9 +683,9 @@ function selectObjectAndSync(threeObject: THREE.Object3D) {
   }
 
   // 3. 尝试查找对应的节点（如果场景树存在）
-  const sceneTree = editorStore.sceneTree
-  if (sceneTree) {
-    const node = findNodeByThreeObject(sceneTree.root, threeObject)
+  const sceneTree = editorStore.state.sceneTree
+  if (sceneTree && sceneTree.currentScene) {
+    const node = findNodeByThreeObject(sceneTree.currentScene, threeObject)
     if (node) {
       console.log('🎯 Found corresponding node:', node.name, node.constructor.name)
       // 更新编辑器选择状态
@@ -842,10 +788,10 @@ function handleObjectSelection(event: MouseEvent) {
 
 function selectObject(object: THREE.Object3D) {
   // 查找对应的节点
-  const sceneTree = editorStore.sceneTree
-  if (!sceneTree) return
+  const sceneTree = editorStore.state.sceneTree
+  if (!sceneTree || !sceneTree.currentScene) return
 
-  const node = findNodeByThreeObject(sceneTree.root, object)
+  const node = findNodeByThreeObject(sceneTree.currentScene, object)
   if (node) {
     // 设置选中的3D对象（用于Transform Controls组件）
     selectedObject.value = object
@@ -868,7 +814,8 @@ function updateTransformControls(object: THREE.Object3D) {
   if (currentTool.value === 'move' || currentTool.value === 'rotate' || currentTool.value === 'scale') {
     transformControls.attach(object)
     ;(transformControls as any).visible = true
-    transformControls.setMode(currentTool.value)
+    const mode = currentTool.value === 'move' ? 'translate' : currentTool.value
+    transformControls.setMode(mode as any)
 
     // 设置控制器大小，确保可见性
     transformControls.setSize(0.8)
@@ -1130,11 +1077,19 @@ function cleanup() {
 
   if (orbitControls) {
     orbitControls.dispose()
+    orbitControls = null
+  }
+
+  if (firstPersonController) {
+    firstPersonController.disconnect()
+    firstPersonController = null
   }
 
   if (transformControls) {
     transformControls.dispose()
   }
+
+  console.log('✅ 3D视口已清理')
 }
 
 // 暴露方法给父组件
@@ -1240,6 +1195,26 @@ defineExpose({
   border-radius: 4px;
   font-size: 10px;
   color: #cccccc;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qaq-camera-mode-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.qaq-camera-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .qaq-transform-panel {

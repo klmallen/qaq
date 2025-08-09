@@ -26,6 +26,8 @@
       class="qaq-scene-tree-content"
       @contextmenu="handleEmptyAreaContextMenu"
     >
+    <!-- {{ editorStore.state.engineBridge.getSceneNodes() }} -->
+    123
       <div v-if="!editorStore.state.sceneTree" class="qaq-empty-state">
         <p>No scene loaded</p>
         <UButton
@@ -43,7 +45,7 @@
           @click="showAddNodeDialog"
         />
       </div>
-
+      
       <div v-else class="qaq-tree-container">
         <QaqSceneTreeNode
           :node="currentScene"
@@ -321,12 +323,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useEditorStore } from '~/stores/editor'
 import { Node, Node2D, Node3D, MeshInstance3D, generateUniqueNodeName } from '~/core'
+import { getEditorEventBus } from '~/core/editor/EditorEventBus'
 
 // 状态管理
 const editorStore = useEditorStore()
+const eventBus = getEditorEventBus()
 
 // 事件定义
 const emit = defineEmits<{
@@ -334,6 +338,44 @@ const emit = defineEmits<{
   'node-selected-3d': [node: any]
 }>()
 
+// 事件监听器清理函数
+let eventCleanupFunctions: (() => void)[] = []
+
+// 设置事件监听
+onMounted(() => {
+  console.log('🌳 SceneTreeDock: 设置事件监听器')
+
+  // 监听场景加载事件
+  eventCleanupFunctions.push(
+    eventBus.on('scene:loaded', (event) => {
+      console.log('🌳 SceneTreeDock: 收到场景加载事件', event.data)
+      refreshTree()
+    })
+  )
+
+  // 监听节点添加事件
+  eventCleanupFunctions.push(
+    eventBus.on('scene:node_added', (event) => {
+      console.log('🌳 SceneTreeDock: 收到节点添加事件', event.data)
+      refreshTree()
+    })
+  )
+
+  // 监听节点移除事件
+  eventCleanupFunctions.push(
+    eventBus.on('scene:node_removed', (event) => {
+      console.log('🌳 SceneTreeDock: 收到节点移除事件', event.data)
+      refreshTree()
+    })
+  )
+})
+
+// 清理事件监听器
+onUnmounted(() => {
+  console.log('🌳 SceneTreeDock: 清理事件监听器')
+  eventCleanupFunctions.forEach(cleanup => cleanup())
+  eventCleanupFunctions = []
+})
 // 响应式数据
 const showAddDialog = ref(false)
 const showCreateSceneDialog = ref(false)
@@ -380,22 +422,22 @@ watch(selectedSceneTab, (newTab) => {
 const currentScene = computed(() => editorStore.currentScene)
 const selectedNode = computed(() => editorStore.state.selectedNode)
 
-// 监听场景变化
-watch(currentScene, (newScene, oldScene) => {
-  console.log('🌳 SceneTreeDock scene watcher triggered:', {
-    newScene: newScene?.name,
-    oldScene: oldScene?.name,
-    hasChildren: newScene?.children?.length || 0
-  })
+// // 监听场景变化
+// watch(currentScene, (newScene, oldScene) => {
+//   console.log('🌳 SceneTreeDock scene watcher triggered:', {
+//     newScene: newScene?.name,
+//     oldScene: oldScene?.name,
+//     hasChildren: newScene?.children?.length || 0
+//   })
 
-  if (newScene !== oldScene && newScene) {
-    console.log('🌳 Scene changed in SceneTreeDock:', newScene?.name)
-    // 场景切换时清除选择，但避免在初始化时触发
-    if (oldScene && selectedNode.value) {
-      editorStore.clearSelection()
-    }
-  }
-}, { immediate: true, deep: true })
+//   if (newScene !== oldScene && newScene) {
+//     console.log('🌳 Scene changed in SceneTreeDock:', newScene?.name)
+//     // 场景切换时清除选择，但避免在初始化时触发
+//     if (oldScene && selectedNode.value) {
+//       editorStore.clearSelection()
+//     }
+//   }
+// }, { immediate: true, deep: true })
 
 // 节点类型配置
 const nodeTypes = [
@@ -405,12 +447,12 @@ const nodeTypes = [
   { label: 'MeshInstance3D', value: 'MeshInstance3D', icon: 'i-heroicons-cube' }
 ]
 
-// 场景类型配置
-const sceneTypes = [
-  { label: '3D Scene', value: '3d', icon: 'i-heroicons-cube' },
-  { label: '2D Scene', value: '2d', icon: 'i-heroicons-square-2-stack' },
-  { label: 'UI Scene', value: 'ui', icon: 'i-heroicons-window' }
-]
+// 场景类型配置（保留以备将来使用）
+// const sceneTypes = [
+//   { label: '3D Scene', value: '3d', icon: 'i-heroicons-cube' },
+//   { label: '2D Scene', value: '2d', icon: 'i-heroicons-square-2-stack' },
+//   { label: 'UI Scene', value: 'ui', icon: 'i-heroicons-window' }
+// ]
 
 // 父节点选项
 const parentOptions = computed(() => {
@@ -487,50 +529,89 @@ function handleNodeDelete(node: Node) {
 function showAddNodeDialog() {
   selectedNodeType.value = ''
   newNodeName.value = ''
-  selectedParent.value = selectedNode.value || currentScene.value
+  selectedParent.value = (selectedNode.value as any) || (currentScene.value as any)
   showAddDialog.value = true
 }
 
 function addNode() {
-  if (!selectedNodeType.value || !newNodeName.value) return
+  if (!selectedNodeType.value || !newNodeName.value) {
+    console.warn('⚠️ 节点类型或名称未选择')
+    return
+  }
 
   const parent = selectedParent.value || currentScene.value
-  if (!parent) return
+  if (!parent) {
+    console.error('❌ 没有找到父节点')
+    return
+  }
+
+  // 检查引擎桥接器
+  const bridge = editorStore.state.engineBridge
+  if (!bridge) {
+    console.error('❌ 引擎桥接器未初始化')
+    return
+  }
+
+  console.log(`🔨 开始创建节点: ${selectedNodeType.value} - ${newNodeName.value}`)
+  console.log(`   父节点: ${parent.name}`)
 
   // 生成唯一名称
   const existingNames = parent.children.map(child => child.name)
   const uniqueName = generateUniqueNodeName(newNodeName.value, existingNames)
 
+  console.log(`   唯一名称: ${uniqueName}`)
+
   // 创建节点
-  let newNode: Node
+  let newNode: any
 
-  switch (selectedNodeType.value) {
-    case 'Node':
-      newNode = new Node(uniqueName)
-      break
-    case 'Node2D':
-      newNode = new Node2D(uniqueName)
-      break
-    case 'Node3D':
-      newNode = new Node3D(uniqueName)
-      break
-    case 'MeshInstance3D':
-      newNode = new MeshInstance3D(uniqueName)
-      // 创建默认网格
-      ;(newNode as MeshInstance3D).createBoxMesh()
-      break
-    default:
-      newNode = new Node(uniqueName)
+  try {
+    switch (selectedNodeType.value) {
+      case 'Node':
+        newNode = new Node(uniqueName)
+        break
+      case 'Node2D':
+        newNode = new Node2D(uniqueName)
+        break
+      case 'Node3D':
+        newNode = new Node3D(uniqueName)
+        break
+      case 'MeshInstance3D':
+        newNode = new MeshInstance3D(uniqueName)
+        // 创建默认网格
+        ;(newNode as MeshInstance3D).createBoxMesh()
+        break
+      default:
+        newNode = new Node(uniqueName)
+    }
+
+    console.log(`✅ 节点创建成功: ${newNode.constructor.name}`)
+    console.log(`   节点ID: ${newNode.getInstanceId()}`)
+
+    // 使用引擎桥接器添加节点
+    bridge.addNodeToScene(newNode, parent as any)
+
+    console.log(`✅ 节点已添加到场景`)
+    console.log(`   父节点子节点数: ${parent.children.length}`)
+
+    // 强制更新场景节点列表
+    editorStore.updateSceneNodes()
+
+    // 选中新节点
+    bridge.selectNode(newNode.getInstanceId())
+
+    console.log(`✅ 节点已选中`)
+
+    // 关闭对话框
+    showAddDialog.value = false
+
+    // 强制刷新场景树显示
+    nextTick(() => {
+      console.log('🔄 场景树刷新完成')
+    })
+
+  } catch (error) {
+    console.error('❌ 创建节点失败:', error)
   }
-
-  // 添加到父节点
-  parent.addChild(newNode)
-
-  // 选中新节点
-  editorStore.setSelectedNode(newNode)
-
-  // 关闭对话框
-  showAddDialog.value = false
 }
 
 // ========================================================================
@@ -556,9 +637,9 @@ function createScript() {
 
 function openAnimationEditor() {
   if (contextMenuNode.value && contextMenuNode.value.constructor.name === 'MeshInstance3D') {
-    // 显示动画面板并设置目标网格
-    editorStore.updatePanel('animation', { visible: true })
-    editorStore.updatePanel('output', { visible: true })
+    // TODO: 实现面板显示功能
+    // editorStore.updatePanel('animation', { visible: true })
+    // editorStore.updatePanel('output', { visible: true })
 
     // 通过事件通知父组件打开动画编辑器
     emit('open-animation-editor', contextMenuNode.value)
@@ -590,7 +671,7 @@ function duplicateNode() {
 
 function deleteNode() {
   if (contextMenuNode.value) {
-    handleNodeDelete(contextMenuNode.value)
+    handleNodeDelete(contextMenuNode.value as any)
   }
   showContextMenu.value = false
 }
@@ -601,12 +682,12 @@ function deleteNode() {
 
 function refreshTree() {
   // 强制重新渲染
-  editorStore.refreshSceneTree()
+  editorStore.updateSceneNodes()
 }
 
 function createNewScene() {
   // 生成默认场景名称
-  const existingScenes = editorStore.sceneTabs
+  const existingScenes = editorStore.state.openTabs.filter(tab => tab.type === 'scene')
   const sceneNumber = existingScenes.length + 1
   const defaultName = `Scene${sceneNumber}`
 
@@ -629,7 +710,7 @@ async function confirmCreateSceneFromDialog() {
     }
 
     // 调用编辑器存储的创建场景方法
-    const sceneTab = await editorStore.createNewScene(sceneConfig)
+    await editorStore.createNewScene(sceneConfig)
 
     // 关闭对话框
     showCreateSceneDialog.value = false
@@ -637,7 +718,7 @@ async function confirmCreateSceneFromDialog() {
     // 确保场景树被正确设置
     refreshTree()
 
-    console.log('✅ Created new scene:', newSceneName.value, 'Tab ID:', sceneTab.id)
+    console.log('✅ Created new scene:', newSceneName.value)
   } catch (error) {
     console.error('❌ Failed to create new scene:', error)
   }
